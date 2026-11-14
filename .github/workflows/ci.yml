@@ -1,0 +1,97 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main, staging]
+  push:
+    branches: [main, staging]
+
+permissions:
+  contents: read
+
+jobs:
+  struttura:
+    name: Controllo struttura
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: File obbligatori
+        run: |
+          for f in README.md LICENSE CLAUDE.md .env.example .gitignore; do
+            test -f "$f" || { echo "Manca $f"; exit 1; }
+          done
+      - name: Nessun file di segreti
+        run: |
+          if git ls-files | grep -E '(^|/)\.env$'; then
+            echo "Un file .env è nel repository"; exit 1
+          fi
+
+  backend:
+    name: Backend
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Il backend esiste?
+        id: has
+        run: |
+          if [ -f backend/pyproject.toml ]; then echo "present=true" >> "$GITHUB_OUTPUT"; else echo "present=false" >> "$GITHUB_OUTPUT"; fi
+      - uses: actions/setup-python@v5
+        if: steps.has.outputs.present == 'true'
+        with:
+          python-version: "3.12"
+      - name: Installazione
+        if: steps.has.outputs.present == 'true'
+        run: pip install -e "backend[dev]"
+      - name: Controllo di stile (Ruff)
+        if: steps.has.outputs.present == 'true'
+        run: ruff check backend && ruff format --check backend
+      - name: Test
+        if: steps.has.outputs.present == 'true'
+        run: pytest backend/tests
+
+  frontend:
+    name: Frontend
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Il frontend esiste?
+        id: has
+        run: |
+          if [ -f frontend/package.json ]; then echo "present=true" >> "$GITHUB_OUTPUT"; else echo "present=false" >> "$GITHUB_OUTPUT"; fi
+      - uses: actions/setup-node@v4
+        if: steps.has.outputs.present == 'true'
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Installazione
+        if: steps.has.outputs.present == 'true'
+        run: npm ci
+        working-directory: frontend
+      - name: Controllo di stile
+        if: steps.has.outputs.present == 'true'
+        run: npm run lint --if-present
+        working-directory: frontend
+      - name: Test
+        if: steps.has.outputs.present == 'true'
+        run: npm test --if-present
+        working-directory: frontend
+      - name: Build
+        if: steps.has.outputs.present == 'true'
+        run: npm run build
+        working-directory: frontend
+
+  segreti:
+    name: Scansione dei segreti
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      # Serve a gitleaks per leggere i commit della richiesta di revisione
+      pull-requests: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
