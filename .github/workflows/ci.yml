@@ -86,6 +86,8 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      # Serve a gitleaks per leggere i commit della richiesta di revisione
+      pull-requests: read
     steps:
       - uses: actions/checkout@v4
         with:
