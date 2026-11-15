@@ -2,9 +2,75 @@
 
 REST API, database models, Garmin sync and migrations. Python with FastAPI, SQLAlchemy and Alembic.
 
-Status: structure only; the code arrives in later phases.
+Status: step 1 (minimal backend): health endpoints, settings, database session, Alembic.
 
-## Planned structure
+## Development
+
+Requirements: [uv](https://docs.astral.sh/uv/) and Docker Desktop. uv installs Python 3.12 by itself (see `.python-version`).
+
+```sh
+# 1. Configuration, once: copy the example and replace every CHANGE_ME
+#    (local values only, letters and digits)
+cp .env.example .env
+
+# 2. Development database (PostGIS), from the repository root
+docker compose up -d --wait
+
+# 3. Backend, from backend/
+cd backend
+uv sync                                  # create .venv and install dependencies
+uv run alembic upgrade head              # apply the migrations
+uv run uvicorn app.main:app --reload     # http://127.0.0.1:8000/api/health
+```
+
+Interactive API docs: http://127.0.0.1:8000/docs. A Bruno collection is in `bruno/` (see `bruno/README.md`).
+
+Variables set in the shell take precedence over `.env`: after an `export DATABASE_URL=...`, open a new terminal or `unset` it.
+
+### Checks
+
+Run from `backend/` before every pull request (CI runs the same):
+
+```sh
+uv run ruff check
+uv run ruff format --check
+uv run pytest
+```
+
+With the development database running, the tests read `.env` and also run the database tests; without it, those tests are skipped locally (in CI they must run).
+
+### Migrations
+
+```sh
+uv run alembic revision --autogenerate -m "describe the change"   # then review it by hand
+uv run alembic upgrade head          # apply
+uv run alembic downgrade -1          # undo the last one
+uv run alembic current               # version of the database
+uv run alembic upgrade head --sql    # print the SQL without running it
+```
+
+Rules for writing migrations: `migrations/README.md`.
+
+### Development database
+
+```sh
+docker compose ps                    # status
+docker compose logs db               # logs
+docker compose stop                  # stop, keeping the data
+docker compose down -v               # delete everything, including the data
+docker compose exec db psql -U postgres -d sportlab_dev    # SQL shell as superuser
+```
+
+The init script (`docker/dev/postgres-init/20_sportlab.sh`) runs only when the data volume is empty: after changing it, or the passwords in `.env`, recreate the database with `docker compose down -v`.
+
+Two roles, as in staging and production:
+
+- `sportlab_dev_migrator` owns the schema and runs Alembic (`DATABASE_MIGRATION_URL`). It also has `CREATEDB`, in development only, for the throwaway databases of the migration tests.
+- `sportlab_dev_app` only reads and writes data (`DATABASE_URL`): it cannot create, alter, drop or truncate tables.
+
+The `postgis/postgis` image is published for amd64 only: on Apple Silicon it runs under emulation (slower start, same image as CI and production).
+
+## Structure
 
 ```
 app/
