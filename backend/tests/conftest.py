@@ -10,6 +10,7 @@ the first source that has it wins:
 """
 
 import os
+import time
 import uuid
 from collections.abc import Iterator
 from pathlib import Path
@@ -17,6 +18,7 @@ from pathlib import Path
 import pytest
 from dotenv import dotenv_values
 from sqlalchemy import Engine, create_engine, make_url, text
+from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
 from sqlalchemy.pool import NullPool
 
@@ -87,9 +89,36 @@ def empty_database() -> Iterator[Engine]:
         try:
             engine.dispose()
         finally:
-            with admin.connect() as connection:
-                connection.execute(text(f'DROP DATABASE IF EXISTS "{name}" WITH (FORCE)'))
+            _drop_database(admin, name)
             admin.dispose()
+
+
+def _drop_database(admin: Engine, name: str) -> None:
+    """Drop a throwaway database, even if autovacuum happens to be working on it.
+
+    A brand new database has never been vacuumed, so autovacuum often visits it
+    within seconds. A plain DROP DATABASE asks autovacuum to leave and waits for
+    it. DROP ... WITH (FORCE) would instead try to terminate it, which only a
+    superuser may do (autovacuum runs without a role), so it is not used.
+
+    If a test left a session open (same role), terminate that session and retry.
+    """
+    with admin.connect() as connection:
+        for _ in range(3):
+            try:
+                connection.execute(text(f'DROP DATABASE IF EXISTS "{name}"'))
+                return
+            except OperationalError:
+                connection.execute(
+                    text(
+                        "SELECT pg_terminate_backend(pid) FROM pg_stat_activity"
+                        " WHERE datname = :name AND usename = current_user"
+                        " AND pid <> pg_backend_pid()"
+                    ),
+                    {"name": name},
+                )
+                time.sleep(0.5)
+        connection.execute(text(f'DROP DATABASE IF EXISTS "{name}"'))
 
 
 @pytest.fixture
