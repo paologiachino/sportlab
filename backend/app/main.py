@@ -8,6 +8,7 @@ from starlette.middleware.sessions import SessionMiddleware
 from app.api import auth, health
 from app.core.config import get_settings
 from app.core.cookies import OAUTH_STATE_LIFETIME, cookie_names
+from app.core.csrf import RequireCSRFHeader
 
 logger = logging.getLogger(__name__)
 
@@ -32,6 +33,9 @@ app.add_middleware(
     same_site="lax",
     https_only=not settings.is_development,
 )
+
+# State-changing API requests need X-Requested-With (see app/core/csrf.py)
+app.add_middleware(RequireCSRFHeader)
 
 app.include_router(health.router, prefix="/api")
 app.include_router(auth.router, prefix="/api")
