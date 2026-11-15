@@ -17,6 +17,7 @@ from datetime import UTC, datetime, timedelta
 from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 
+from app.core.config import Settings
 from app.core.security import hash_refresh_token, new_refresh_token
 from app.models import RefreshToken
 
@@ -33,6 +34,13 @@ class RefreshTokenReuseError(InvalidRefreshTokenError):
 class SessionLifetimes:
     refresh: timedelta  # sliding: REFRESH_TOKEN_DAYS
     session: timedelta  # absolute: SESSION_MAX_DAYS
+
+    @classmethod
+    def from_settings(cls, settings: Settings) -> "SessionLifetimes":
+        return cls(
+            refresh=timedelta(days=settings.refresh_token_days),
+            session=timedelta(days=settings.session_max_days),
+        )
 
 
 @dataclass(frozen=True)

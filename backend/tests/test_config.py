@@ -11,6 +11,7 @@ REQUIRED = {
 
 OPTIONAL = [
     "ENVIRONMENT",
+    "PUBLIC_URL",
     "GOOGLE_CLIENT_ID",
     "GOOGLE_CLIENT_SECRET",
     "ADMIN_EMAIL",
@@ -49,6 +50,7 @@ def test_empty_value_means_not_set(env: pytest.MonkeyPatch) -> None:
 
 def test_override(env: pytest.MonkeyPatch) -> None:
     env.setenv("ENVIRONMENT", "staging")
+    env.setenv("PUBLIC_URL", "https://sportlab-staging.example.com")
     env.setenv("ACCESS_TOKEN_MINUTES", "5")
 
     settings = load_settings(env_file=None)
@@ -127,3 +129,28 @@ def test_refresh_cannot_outlive_the_session(env: pytest.MonkeyPatch) -> None:
 
     with pytest.raises(SettingsError, match="cannot be longer than SESSION_MAX_DAYS"):
         load_settings(env_file=None)
+
+
+def test_public_url_and_redirect_uri(env: pytest.MonkeyPatch) -> None:
+    settings = load_settings(env_file=None)
+
+    assert settings.google_redirect_uri == "http://localhost:8000/api/auth/google/callback"
+
+
+def test_public_url_must_be_https_outside_development(env: pytest.MonkeyPatch) -> None:
+    env.setenv("ENVIRONMENT", "staging")
+    env.setenv("PUBLIC_URL", "http://sportlab-staging.example.com")
+
+    with pytest.raises(SettingsError, match="PUBLIC_URL must use https"):
+        load_settings(env_file=None)
+
+    env.setenv("PUBLIC_URL", "https://sportlab-staging.example.com/")
+    assert load_settings(env_file=None).google_redirect_uri == (
+        "https://sportlab-staging.example.com/api/auth/google/callback"
+    )
+
+
+def test_admin_email_is_normalised(env: pytest.MonkeyPatch) -> None:
+    env.setenv("ADMIN_EMAIL", "  Admin@Example.COM ")
+
+    assert load_settings(env_file=None).admin_email_normalised == "admin@example.com"
