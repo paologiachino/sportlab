@@ -33,6 +33,7 @@ Sito multiutente per attività sportive e dati di salute scaricati da Garmin (Pe
 - Nessun segreto nel codice o nei repository: tutto da variabili d'ambiente (vedi `.env.example`).
 - Ogni dato personale ha `user_id`; ogni query passa dallo strato che filtra per l'utente autenticato. Il database aggiunge Row-Level Security come seconda barriera.
 - Gli utenti si registrano con Google e restano "in attesa" finché l'amministratore non li approva.
+- L'amministratore è impersonale: nessun nome o email nel codice né nel seeding. Il ruolo `admin` va all'email in `ADMIN_EMAIL` al primo accesso; la registrazione libera non assegna mai ruoli.
 - Le chiavi Garmin degli utenti si salvano cifrate; non si scrivono mai nei log.
 - Le migrazioni si fanno con Alembic, scritte in modo compatibile con la versione precedente del codice.
 - Dati di prova solo sintetici; mai dati reali di salute in sviluppo o pre-produzione.
