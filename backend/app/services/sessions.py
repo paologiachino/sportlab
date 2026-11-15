@@ -136,12 +136,20 @@ def end_session(db: Session, token: str, now: datetime | None = None) -> None:
     db.commit()
 
 
-def end_all_sessions(db: Session, user_id: uuid.UUID, now: datetime | None = None) -> None:
-    """Revoke every session of a user (for example when an admin disables them)."""
-    now = now or datetime.now(UTC)
+def revoke_all_sessions(db: Session, user_id: uuid.UUID, now: datetime) -> None:
+    """Revoke every session of a user, inside the caller's transaction (no commit).
+
+    Used when an admin disables a user: the status change and the revocation
+    are saved together or not at all.
+    """
     db.execute(
         update(RefreshToken)
         .where(RefreshToken.user_id == user_id, RefreshToken.revoked_at.is_(None))
         .values(revoked_at=now)
     )
+
+
+def end_all_sessions(db: Session, user_id: uuid.UUID, now: datetime | None = None) -> None:
+    """Revoke every session of a user and commit."""
+    revoke_all_sessions(db, user_id, now or datetime.now(UTC))
     db.commit()
