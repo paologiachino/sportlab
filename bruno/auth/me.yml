@@ -24,7 +24,4 @@ docs: |-
   - `401`: no access cookie, or it expired (call Refresh).
 
   The session lives in HttpOnly cookies set by the Google sign-in in a browser.
-  To use it here, sign in at http://localhost:8000/api/auth/google/login, then
-  copy the `sportlab_access` and `sportlab_refresh` cookies from the browser's
-  developer tools into Bruno's cookie manager for localhost. Never share them:
-  they are a live session.
+  To use it here, see "Using a browser session" in `bruno/README.md`.

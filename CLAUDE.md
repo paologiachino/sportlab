@@ -4,7 +4,7 @@ Working rules for Claude Code in this repository. The owner is Paolo, who valida
 
 ## Project
 
-Multi-user site for sports activities and health data downloaded from Garmin (Personal API), with a backend, frontend, MCP server and PostgreSQL database. Current phase: backend step 1 (minimal backend, see `docs/backend-step-1.md`). Full description in `README.md` and in `docs/`.
+Multi-user site for sports activities and health data downloaded from Garmin (Personal API), with a backend, frontend, MCP server and PostgreSQL database. Current phase: backend step 2 done (Google sign-in, sessions, user approval, see `docs/backend-step-2.md`); the next step is not planned yet. Full description in `README.md` and in `docs/`.
 
 ## Stack (confirmed)
 
@@ -50,6 +50,7 @@ cd backend
 uv sync                                    # dependencies (Python 3.12 from .python-version)
 uv run alembic upgrade head                # migrations
 uv run uvicorn app.main:app --reload       # backend on http://127.0.0.1:8000
+# Google sign-in: OAuth client per docs/google-oauth.md, then open http://localhost:8000/api/auth/google/login
 
 uv run ruff check                          # style checks, required before a pull request
 uv run ruff format --check
@@ -58,7 +59,7 @@ uv run pytest                              # tests; database tests need the Comp
 cd ../bruno && bru run --env Local         # Bruno collection against the running backend
 ```
 
-Shell variables take precedence over `.env`. Database tests are skipped locally without a database but must run in CI.
+Shell variables take precedence over `.env`. Database tests are skipped locally without a database but must run in CI. Tests never call Google: they use the fake Google in `backend/tests/fake_google.py`.
 
 ## Licence
 
