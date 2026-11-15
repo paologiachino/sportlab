@@ -6,6 +6,7 @@ from typing import Literal
 
 from pydantic import (
     Field,
+    HttpUrl,
     PostgresDsn,
     SecretStr,
     ValidationError,
@@ -46,6 +47,9 @@ class Settings(MigrationSettings):
     """Everything the running application needs."""
 
     environment: Literal["development", "staging", "production"] = "development"
+    # Address of the site as the browser sees it; the Google redirect URI is
+    # built from it and must match the one registered in Google Cloud
+    public_url: HttpUrl = HttpUrl("http://localhost:8000")
 
     database_url: PostgresDsn = Field(repr=False)
 
@@ -62,6 +66,18 @@ class Settings(MigrationSettings):
     # After this a session ends whatever the activity: sign in with Google again
     session_max_days: int = Field(default=90, gt=0)
 
+    @property
+    def is_development(self) -> bool:
+        return self.environment == "development"
+
+    @property
+    def google_redirect_uri(self) -> str:
+        return self.public_url.unicode_string().rstrip("/") + "/api/auth/google/callback"
+
+    @property
+    def admin_email_normalised(self) -> str | None:
+        return self.admin_email.strip().lower() if self.admin_email else None
+
     @field_validator("secret_key")
     @classmethod
     def secret_key_is_long_enough(cls, value: SecretStr) -> SecretStr:
@@ -70,6 +86,13 @@ class Settings(MigrationSettings):
         if len(value.get_secret_value()) < 32:
             raise ValueError("must be at least 32 characters")
         return value
+
+    @model_validator(mode="after")
+    def https_outside_development(self) -> "Settings":
+        # Secure cookies and the Google redirect require HTTPS in staging and production
+        if not self.is_development and self.public_url.scheme != "https":
+            raise ValueError("PUBLIC_URL must use https outside development")
+        return self
 
     @model_validator(mode="after")
     def refresh_fits_in_session(self) -> "Settings":

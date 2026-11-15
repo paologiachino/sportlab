@@ -1,0 +1,31 @@
+info:
+  name: Google login
+  type: http
+  seq: 1
+
+http:
+  method: GET
+  url: "{{baseUrl}}/api/auth/google/login"
+
+runtime:
+  assertions:
+    - expression: res.status
+      operator: neq
+      value: "500"
+
+settings:
+  encodeUrl: true
+  followRedirects: false
+
+docs: |-
+  Starts the Google sign-in. Meant for a browser: open
+  http://localhost:8000/api/auth/google/login there to sign in for real.
+
+  - `302`: redirect to Google, with `state`, `nonce` and the PKCE challenge in
+    the URL, and the signed login-state cookie set.
+  - `503 {"detail": "Google login is not configured"}`: GOOGLE_CLIENT_ID and
+    GOOGLE_CLIENT_SECRET are not set (see docs/google-oauth.md, added in PR 6).
+
+  Google then sends the browser to /api/auth/google/callback, which is not part
+  of the API schema (only Google calls it). It opens the session and sets the
+  HttpOnly session cookies.
