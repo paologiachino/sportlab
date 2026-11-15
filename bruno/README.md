@@ -20,7 +20,19 @@ bruno/
     openapi.yml           GET /openapi.json (the specification)
     swagger-ui.yml        GET /docs (interactive, best in a browser)
     redoc.yml             GET /redoc (read-only, best in a browser)
+  auth/                   Google sign-in and the session
+    google-login.yml      GET /api/auth/google/login (redirect to Google)
+    me.yml                GET /api/auth/me
+    refresh.yml           POST /api/auth/refresh
+    logout.yml            POST /api/auth/logout
+  admin/                  user administration (admins only)
+    list-users.yml        GET /api/admin/users
+    approve.yml           POST /api/admin/users/:user_id/approve
+    disable.yml           POST /api/admin/users/:user_id/disable
+    set-role.yml          POST /api/admin/users/:user_id/role
 ```
+
+The Google callback (`/api/auth/google/callback`) has no request: only Google calls it, at the end of the browser redirect, and it is left out of the OpenAPI specification.
 
 ## Setup
 
@@ -50,7 +62,22 @@ Requests are `.yml` files with `info`, `http`, `runtime.assertions`, `settings` 
 
 ## Secrets
 
-Never write a token, password or key into these files. When authentication arrives, tokens go into environment variables marked as **secret** in Bruno: the file keeps only the variable name, and the value stays in Bruno's local encrypted store on your machine.
+Never write a token, cookie, password or key into these files. A value Bruno must send goes into an environment variable marked as **secret**, or into its cookie manager: both stay on your machine, outside the repository.
+
+## Using a browser session
+
+Sign-in needs a browser (Google's pages), so Bruno borrows the session the browser opened. The session is two HttpOnly cookies, `sportlab_access` (15 minutes) and `sportlab_refresh` (path `/api/auth`).
+
+1. Configure Google sign-in (see `docs/google-oauth.md`) and sign in at http://localhost:8000/api/auth/google/login.
+2. In the browser's developer tools (**Application** or **Storage** → **Cookies** → `http://localhost:8000`) copy the value of `sportlab_access`.
+3. In Bruno, open the **Cookies** manager and add `sportlab_access` with that value for the domain **`127.0.0.1`**, path `/`. The domain must match `baseUrl` in the Local environment, not the `localhost` used by the browser: cookies are kept per host name.
+4. Send `auth/Me`: `200` with your account. Admin requests also need the `X-Requested-With` header, already set on them.
+
+After 15 minutes the access cookie expires and requests answer `401`: sign in again in the browser and copy the new value (there is no frontend yet to renew it in the browser).
+
+To renew from Bruno with `auth/Refresh`, copy `sportlab_refresh` as well (domain `127.0.0.1`, path `/api/auth`), then **stop using that session in the browser**. Refresh tokens are single-use: when Bruno refreshes, the browser's copy becomes an old token, and presenting an old token is treated as theft and ends the session for both. Sign in again in the browser when you need it there.
+
+Treat copied cookies like a password: they are a live session. Logout (`auth/Logout`) ends it.
 
 ## Keeping the collection in sync with the API
 

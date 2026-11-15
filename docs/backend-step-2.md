@@ -125,5 +125,5 @@ Cookies are host-only (no `Domain` attribute), so a staging session is never sen
 
 ## Open points
 
-- **Google Cloud project**: the OAuth client ("Web application") is created by Paolo following `docs/google-oauth.md`, written in PR 6. Until then the login is covered only by the automated tests with the fake Google; trying it in a browser waits for PR 6.
+- **Google Cloud project**: the OAuth clients ("Web application", one per environment) are created by Paolo following [google-oauth.md](google-oauth.md). Until then the login is covered only by the automated tests with the fake Google.
 - **Session settings**: confirmed by Paolo (15-minute access token, 30-day sliding refresh token, 90-day absolute lifetime, the cookie settings above).
