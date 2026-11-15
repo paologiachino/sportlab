@@ -68,6 +68,8 @@ Two roles, as in staging and production:
 - `sportlab_dev_migrator` owns the schema and runs Alembic (`DATABASE_MIGRATION_URL`). It also has `CREATEDB`, in development only, for the throwaway databases of the migration tests.
 - `sportlab_dev_app` only reads and writes data (`DATABASE_URL`): it cannot create, alter, drop or truncate tables.
 
+`tests/test_db_roles.py` checks this separation on the database the tests use; CI creates the same roles with the same script on its PostgreSQL service.
+
 The `postgis/postgis` image is published for amd64 only: on Apple Silicon it runs under emulation (slower start, same image as CI and production).
 
 ## Structure

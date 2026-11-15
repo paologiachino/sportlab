@@ -16,9 +16,10 @@ from collections.abc import Iterator
 import pytest
 from dotenv import dotenv_values
 from sqlalchemy import Engine, create_engine, make_url, text
-from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
 from sqlalchemy.pool import NullPool
+
+from tests.support import require_database
 
 SYNTHETIC_ENV = {
     "ENVIRONMENT": "development",
@@ -42,21 +43,6 @@ def _prepare_environment() -> None:
 
 
 _prepare_environment()
-
-
-def require_database(engine: Engine) -> None:
-    """Stop the test when the database behind `engine` is not reachable.
-
-    Locally the test is skipped, but in CI it fails: there a skip would hide a
-    broken setup behind a green run.
-    """
-    try:
-        with engine.connect():
-            pass
-    except OperationalError:
-        if os.environ.get("CI"):
-            pytest.fail("Test database not reachable in CI: check the postgres service")
-        pytest.skip("Test database not reachable (start the development database)")
 
 
 @pytest.fixture
