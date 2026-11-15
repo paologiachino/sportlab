@@ -1,10 +1,16 @@
-# GitHub Actions only for now: pip, npm and docker are added once
-# backend/pyproject.toml, frontend/package.json and the Dockerfiles exist
+# npm and docker are added once frontend/package.json and the Dockerfiles exist
 # (Dependabot reports an error when it cannot find the files to check).
 version: 2
 updates:
   - package-ecosystem: github-actions
     directory: "/"
+    schedule:
+      interval: monthly
+    target-branch: staging
+
+  # Backend Python dependencies, managed with uv (backend/uv.lock)
+  - package-ecosystem: uv
+    directory: "/backend"
     schedule:
       interval: monthly
     target-branch: staging

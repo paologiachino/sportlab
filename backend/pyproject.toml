@@ -1,0 +1,35 @@
+[project]
+name = "sportlab-backend"
+version = "0.1.0"
+description = "sportlab REST API: activities and health data from Garmin"
+readme = "README.md"
+license = "AGPL-3.0-or-later"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.163.0",
+    "uvicorn>=0.54.0",
+]
+
+[dependency-groups]
+dev = [
+    "httpx2>=2.16.0",
+    "pytest>=9.2.0",
+    "ruff>=0.17.5",
+]
+
+[tool.uv]
+# The backend is an application, not a library to publish:
+# uv installs only its dependencies, without building and installing the package itself.
+package = false
+
+[tool.ruff]
+line-length = 100
+
+[tool.ruff.lint]
+# E/W pycodestyle, F pyflakes, I import sorting, UP modern syntax, B likely bugs
+select = ["E", "W", "F", "I", "UP", "B"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+# Makes the `app` package importable from the tests without installing it
+pythonpath = ["."]
