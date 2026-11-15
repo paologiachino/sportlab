@@ -1,7 +1,8 @@
 #!/bin/sh
 # Development database: the sportlab_dev database and its two roles.
 # Run once by the postgres image, as superuser, when the data volume is empty
-# (after the image's own 10_postgis.sh).
+# (after the image's own 10_postgis.sh). CI runs it too, on its PostgreSQL
+# service, and backend/tests/test_db_roles.py checks the resulting privileges.
 #
 #   sportlab_dev_migrator  owns the schema, runs Alembic (DATABASE_MIGRATION_URL)
 #   sportlab_dev_app       reads and writes data only (DATABASE_URL)

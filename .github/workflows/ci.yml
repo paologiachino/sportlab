@@ -35,19 +35,22 @@ jobs:
       postgres:
         image: postgis/postgis:17-3.7
         env:
-          POSTGRES_USER: sportlab_test
-          POSTGRES_PASSWORD: sportlab_test
-          POSTGRES_DB: sportlab_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
         ports:
           - 5432:5432
         options: >-
-          --health-cmd "pg_isready -U sportlab_test"
+          --health-cmd "pg_isready -U postgres"
           --health-interval 5s
           --health-timeout 5s
           --health-retries 10
+    # The tests use the two roles of the development database, created below by
+    # the same script as the development Compose.
     env:
-      DATABASE_URL: postgresql+psycopg://sportlab_test:sportlab_test@localhost:5432/sportlab_test
-      DATABASE_MIGRATION_URL: postgresql+psycopg://sportlab_test:sportlab_test@localhost:5432/sportlab_test
+      SPORTLAB_APP_PASSWORD: ci_app
+      SPORTLAB_MIGRATOR_PASSWORD: ci_migrator
+      DATABASE_URL: postgresql+psycopg://sportlab_dev_app:ci_app@localhost:5432/sportlab_dev
+      DATABASE_MIGRATION_URL: postgresql+psycopg://sportlab_dev_migrator:ci_migrator@localhost:5432/sportlab_dev
     steps:
       - uses: actions/checkout@v7
       - name: Does the backend exist?
@@ -70,6 +73,16 @@ jobs:
         if: steps.has.outputs.present == 'true'
         run: uv run ruff check && uv run ruff format --check
         working-directory: backend
+      # Service containers start before the checkout, so the script cannot be
+      # mounted: it is copied in and run as the superuser, like Compose does.
+      - name: Database roles
+        if: steps.has.outputs.present == 'true'
+        env:
+          CONTAINER: ${{ job.services.postgres.id }}
+        run: |
+          docker cp docker/dev/postgres-init/20_sportlab.sh "$CONTAINER":/tmp/20_sportlab.sh
+          docker exec -e SPORTLAB_APP_PASSWORD -e SPORTLAB_MIGRATOR_PASSWORD \
+            "$CONTAINER" sh /tmp/20_sportlab.sh
       - name: Test
         if: steps.has.outputs.present == 'true'
         run: uv run pytest
