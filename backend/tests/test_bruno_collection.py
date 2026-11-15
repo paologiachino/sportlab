@@ -22,12 +22,16 @@ Operation = tuple[str, str]
 
 
 def openapi_operations() -> set[Operation]:
-    return {
+    operations = {
         (method.upper(), path)
         for path, item in app.openapi()["paths"].items()
         for method in item
         if method in HTTP_METHODS
     }
+    # FastAPI's own documentation routes are not part of the specification
+    docs_urls = (app.openapi_url, app.docs_url, app.redoc_url)
+    operations |= {("GET", url) for url in docs_urls if url}
+    return operations
 
 
 def bruno_operations() -> set[Operation]:
