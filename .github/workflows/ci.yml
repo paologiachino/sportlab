@@ -35,7 +35,7 @@ jobs:
         id: has
         run: |
           if [ -f backend/pyproject.toml ]; then echo "present=true" >> "$GITHUB_OUTPUT"; else echo "present=false" >> "$GITHUB_OUTPUT"; fi
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         if: steps.has.outputs.present == 'true'
         with:
           python-version: "3.12"
