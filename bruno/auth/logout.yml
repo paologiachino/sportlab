@@ -1,0 +1,25 @@
+info:
+  name: Logout
+  type: http
+  seq: 4
+
+http:
+  method: POST
+  url: "{{baseUrl}}/api/auth/logout"
+  headers:
+    - name: X-Requested-With
+      value: XMLHttpRequest
+
+runtime:
+  assertions:
+    - expression: res.status
+      operator: eq
+      value: "204"
+
+settings:
+  encodeUrl: true
+
+docs: |-
+  Ends the session and clears the cookies. `204` also when already signed out.
+
+  Needs the `X-Requested-With` header (CSRF barrier), otherwise `403`.

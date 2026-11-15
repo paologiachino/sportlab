@@ -2,7 +2,7 @@
 
 REST API, database models, Garmin sync and migrations. Python with FastAPI, SQLAlchemy and Alembic.
 
-Status: step 1 (minimal backend): health endpoints, settings, database session, Alembic.
+Status: step 2 done (Google sign-in, sessions, user approval and roles), on top of step 1 (health endpoints, settings, database session, Alembic). Plans: `docs/backend-step-1.md`, `docs/backend-step-2.md`.
 
 ## Development
 
@@ -26,6 +26,20 @@ uv run uvicorn app.main:app --reload     # http://127.0.0.1:8000/api/health
 Interactive API docs: http://127.0.0.1:8000/docs. A Bruno collection is in `bruno/` (see `bruno/README.md`).
 
 Variables set in the shell take precedence over `.env`: after an `export DATABASE_URL=...`, open a new terminal or `unset` it.
+
+### Google sign-in
+
+Without `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` the backend starts normally and `/api/auth/google/login` answers `503`; the tests never need them (they use a fake Google). To sign in for real, create the OAuth client following `docs/google-oauth.md`, fill in `.env` (with `ADMIN_EMAIL` for the first administrator), restart the backend and open http://localhost:8000/api/auth/google/login, using `localhost` rather than `127.0.0.1` so the browser keeps the login cookie.
+
+| Endpoint | Who | What |
+| --- | --- | --- |
+| `GET /api/auth/google/login` | anyone | redirect to Google |
+| `GET /api/auth/me` | signed in (also pending or disabled) | the current user |
+| `POST /api/auth/refresh` | holder of the refresh cookie | new access and refresh cookies |
+| `POST /api/auth/logout` | anyone | end the session, clear the cookies |
+| `GET /api/admin/users`, `POST /api/admin/users/{id}/approve`, `.../disable`, `.../role` | active admins | user administration |
+
+The session is held in HttpOnly cookies; `POST`, `PUT`, `PATCH` and `DELETE` requests under `/api/` must carry the `X-Requested-With` header (CSRF barrier), otherwise `403`. New users are `pending` and get `403` everywhere except `/api/auth/me` until an administrator approves them.
 
 ### Checks
 

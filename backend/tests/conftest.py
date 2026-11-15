@@ -10,12 +10,15 @@ the first source that has it wins:
 """
 
 import os
+import time
 import uuid
 from collections.abc import Iterator
+from pathlib import Path
 
 import pytest
 from dotenv import dotenv_values
 from sqlalchemy import Engine, create_engine, make_url, text
+from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
 from sqlalchemy.pool import NullPool
 
@@ -25,7 +28,7 @@ SYNTHETIC_ENV = {
     "ENVIRONMENT": "development",
     "DATABASE_URL": "postgresql+psycopg://test_app:test@localhost:5432/sportlab_test",
     "DATABASE_MIGRATION_URL": "postgresql+psycopg://test_migrator:test@localhost:5432/sportlab_test",
-    "SECRET_KEY": "test-secret-key",
+    "SECRET_KEY": "test-" + "x" * 32,  # obviously fake, long enough for the check
     "ENCRYPTION_KEY": "test-encryption-key",
 }
 
@@ -81,7 +84,55 @@ def empty_database() -> Iterator[Engine]:
     try:
         yield engine
     finally:
-        engine.dispose()
-        with admin.connect() as connection:
-            connection.execute(text(f'DROP DATABASE IF EXISTS "{name}" WITH (FORCE)'))
-        admin.dispose()
+        # Nested so the DROP runs even if closing the test's connections fails;
+        # any error is still reported, but no database is left behind
+        try:
+            engine.dispose()
+        finally:
+            _drop_database(admin, name)
+            admin.dispose()
+
+
+def _drop_database(admin: Engine, name: str) -> None:
+    """Drop a throwaway database, even if autovacuum happens to be working on it.
+
+    A brand new database has never been vacuumed, so autovacuum often visits it
+    within seconds. A plain DROP DATABASE asks autovacuum to leave and waits for
+    it. DROP ... WITH (FORCE) would instead try to terminate it, which only a
+    superuser may do (autovacuum runs without a role), so it is not used.
+
+    If a test left a session open (same role), terminate that session and retry.
+    """
+    with admin.connect() as connection:
+        for _ in range(3):
+            try:
+                connection.execute(text(f'DROP DATABASE IF EXISTS "{name}"'))
+                return
+            except OperationalError:
+                connection.execute(
+                    text(
+                        "SELECT pg_terminate_backend(pid) FROM pg_stat_activity"
+                        " WHERE datname = :name AND usename = current_user"
+                        " AND pid <> pg_backend_pid()"
+                    ),
+                    {"name": name},
+                )
+                time.sleep(0.5)
+        connection.execute(text(f'DROP DATABASE IF EXISTS "{name}"'))
+
+
+@pytest.fixture
+def migrated_database(empty_database: Engine) -> Engine:
+    """A brand new database with every migration applied (`alembic upgrade head`).
+
+    The schema comes from the migrations, as in production, not from
+    `Base.metadata.create_all()`.
+    """
+    from alembic import command
+    from alembic.config import Config
+
+    config = Config(Path(__file__).resolve().parents[1] / "alembic.ini")
+    with empty_database.begin() as connection:
+        config.attributes["connection"] = connection
+        command.upgrade(config, "head")
+    return empty_database
