@@ -24,8 +24,9 @@ Sito multiutente per attività sportive e dati di salute scaricati da Garmin (Pe
 
 ## Convenzioni (proposta, da confermare)
 
-- Identificatori nel codice in inglese; commenti, documentazione e messaggi per l'utente in italiano.
-- Messaggi di commit in italiano con prefisso: `feat:`, `fix:`, `chore:`, `docs:`, `test:`.
+- Chat con Paolo in italiano. Codice, identificatori, workflow, commenti, messaggi di commit e descrizioni delle richieste di revisione in inglese.
+- Messaggi di commit in inglese con prefisso: `feat:`, `fix:`, `chore:`, `docs:`, `test:`.
+- La documentazione esistente (`README.md`, `docs/`) è ancora in italiano; la traduzione è da decidere.
 - Python: formattazione e controllo con Ruff, tipi dove utile. TypeScript: ESLint e Prettier.
 
 ## Regole di sicurezza e dati

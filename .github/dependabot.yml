@@ -1,6 +1,6 @@
-# Per ora solo le GitHub Actions: pip, npm e docker si aggiungono
-# quando esistono backend/pyproject.toml, frontend/package.json e i Dockerfile
-# (Dependabot segnala errore se non trova i file da controllare).
+# GitHub Actions only for now: pip, npm and docker are added once
+# backend/pyproject.toml, frontend/package.json and the Dockerfiles exist
+# (Dependabot reports an error when it cannot find the files to check).
 version: 2
 updates:
   - package-ecosystem: github-actions
