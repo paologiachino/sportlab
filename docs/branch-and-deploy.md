@@ -23,7 +23,7 @@ Automated tests use a throwaway database created on every run.
 2. On merge into `staging` or `main`, Docker images are built and stored in GitHub's private registry (GHCR) with the commit tag.
 3. A GitHub runner on the homelab pulls the images and restarts the containers defined in `sportlab-infra`.
 4. The migration job runs before the backend; in production it is preceded by a backup.
-5. Production requires manual approval (GitHub Environments).
+5. Production is deployed by a manual run of the workflow in `sportlab-infra`. Its `production` Environment accepts runs from `main` only; required reviewers are not available on the current plan, so the manual start is the approval.
 6. Rollback: put back the previous image tag; if a migration is incompatible, restore the backup.
 
 Environment configuration and operating procedures are in the [sportlab-infra](https://github.com/paologiachino/sportlab-infra) repository.
@@ -31,5 +31,5 @@ Environment configuration and operating procedures are in the [sportlab-infra](h
 ## GitHub settings to configure by hand
 
 - Branch protection for `main` and `staging` (rulesets): required pull request, required status checks, no direct pushes.
-- Environments `staging` and `production`, with manual approval for `production`.
+- Environments `staging` and `production` in `sportlab-infra` (done); `production` is restricted to `main`. Required reviewers can be added if the plan changes.
 - Secret scanning and Dependabot alerts enabled.

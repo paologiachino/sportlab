@@ -1,0 +1,27 @@
+info:
+  name: OpenAPI specification
+  type: http
+  seq: 1
+
+http:
+  method: GET
+  url: "{{baseUrl}}/openapi.json"
+
+runtime:
+  assertions:
+    - expression: res.status
+      operator: eq
+      value: "200"
+    - expression: res.body.info.title
+      operator: eq
+      value: sportlab
+
+settings:
+  encodeUrl: true
+
+docs: |-
+  The OpenAPI specification that FastAPI generates from the code (JSON).
+
+  It is the source of truth for the API: the Bruno sync test in
+  `backend/tests/test_bruno_collection.py` compares it with this collection,
+  and Bruno's OpenAPI Sync can read it from this URL.

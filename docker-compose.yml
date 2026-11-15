@@ -1,0 +1,36 @@
+# Development services. Not for staging or production: those are defined in
+# the sportlab-infra repository.
+#
+# Values come from the .env file next to this one (copy .env.example): Docker
+# Compose reads it automatically, and so does the backend.
+
+name: sportlab-dev
+
+services:
+  db:
+    # Same image as CI and the homelab. It is published for amd64 only, so on
+    # Apple Silicon it runs under emulation: slower, but identical to production.
+    image: postgis/postgis:17-3.7
+    platform: linux/amd64
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      # Read by the init script to create the two sportlab roles
+      SPORTLAB_APP_PASSWORD: ${SPORTLAB_APP_PASSWORD:?set SPORTLAB_APP_PASSWORD in .env}
+      SPORTLAB_MIGRATOR_PASSWORD: ${SPORTLAB_MIGRATOR_PASSWORD:?set SPORTLAB_MIGRATOR_PASSWORD in .env}
+    ports:
+      # Bound to this machine only, never to the local network
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      # Runs once, when the data volume is empty. Mounted as a single file so the
+      # image's own 10_postgis.sh in the same folder stays visible and runs first.
+      - ./docker/dev/postgres-init/20_sportlab.sh:/docker-entrypoint-initdb.d/20_sportlab.sh:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d sportlab_dev"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+volumes:
+  pgdata:
