@@ -83,6 +83,11 @@ jobs:
           docker cp docker/dev/postgres-init/20_sportlab.sh "$CONTAINER":/tmp/20_sportlab.sh
           docker exec -e SPORTLAB_APP_PASSWORD -e SPORTLAB_MIGRATOR_PASSWORD \
             "$CONTAINER" sh /tmp/20_sportlab.sh
+      # As a deploy does: the migration role applies every migration
+      - name: Migrations
+        if: steps.has.outputs.present == 'true'
+        run: uv run alembic upgrade head
+        working-directory: backend
       - name: Test
         if: steps.has.outputs.present == 'true'
         run: uv run pytest

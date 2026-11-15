@@ -11,7 +11,9 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 ENV_FILE = Path(__file__).resolve().parents[3] / ".env"
 
 
-class Settings(BaseSettings):
+class EnvSettings(BaseSettings):
+    """Where settings come from: the environment first, then the optional .env file."""
+
     model_config = SettingsConfigDict(
         env_file=ENV_FILE,
         env_file_encoding="utf-8",
@@ -21,11 +23,24 @@ class Settings(BaseSettings):
         env_ignore_empty=True,
     )
 
+
+class MigrationSettings(EnvSettings):
+    """What Alembic needs, and nothing more.
+
+    A deploy runs the migrations as a separate job: it gets the migration role's
+    URL but none of the application's secrets (least privilege).
+    """
+
+    # repr=False keeps the password inside the URL out of logs and tracebacks
+    database_migration_url: PostgresDsn = Field(repr=False)
+
+
+class Settings(MigrationSettings):
+    """Everything the running application needs."""
+
     environment: Literal["development", "staging", "production"] = "development"
 
-    # repr=False keeps the passwords inside the URLs out of logs and tracebacks
     database_url: PostgresDsn = Field(repr=False)
-    database_migration_url: PostgresDsn = Field(repr=False)
 
     secret_key: SecretStr
     encryption_key: SecretStr
@@ -43,7 +58,9 @@ class SettingsError(RuntimeError):
     """Raised when the environment does not provide valid settings."""
 
 
-def load_settings(env_file: Path | None = ENV_FILE) -> Settings:
+def load_settings[T: EnvSettings](
+    env_file: Path | None = ENV_FILE, settings_class: type[T] = Settings
+) -> T:
     """Build the settings, turning validation errors into a message without values.
 
     Pydantic's own error text includes the rejected input, which could be a
@@ -51,7 +68,7 @@ def load_settings(env_file: Path | None = ENV_FILE) -> Settings:
     `env_file=None` reads the process environment only (used by the tests).
     """
     try:
-        return Settings(_env_file=env_file)
+        return settings_class(_env_file=env_file)
     except ValidationError as exc:
         problems = [
             f"  {'.'.join(str(part) for part in error['loc']).upper()}: {error['msg']}"
@@ -65,3 +82,9 @@ def load_settings(env_file: Path | None = ENV_FILE) -> Settings:
 def get_settings() -> Settings:
     """Settings for the running application, read once and then reused."""
     return load_settings()
+
+
+@lru_cache
+def get_migration_settings() -> MigrationSettings:
+    """Settings for Alembic: only the migration role's URL is required."""
+    return load_settings(settings_class=MigrationSettings)

@@ -36,13 +36,25 @@ After the callback the backend issues its own tokens; Google's tokens are not ke
 
 - **Access token**: a JWT signed with `SECRET_KEY` (HS256, **PyJWT**, MIT), valid `ACCESS_TOKEN_MINUTES` (15). It carries only the user id and the token type; status and role are read from the database on every request, so a disabled or demoted user loses access within one request, not at expiry.
 - **Refresh token**: a random opaque value, valid `REFRESH_TOKEN_DAYS` (30), stored only as a SHA-256 hash in a `refresh_tokens` table. Each use **rotates** it (the old one is revoked, a new one is issued). Reusing a revoked token is treated as theft and revokes the whole chain of that session.
+- **Sliding refresh**: every rotation issues a token valid another `REFRESH_TOKEN_DAYS`, so a person who uses the site at least once a month stays signed in; after 30 days of inactivity they sign in with Google again.
+- **Absolute lifetime**: a session (the chain of refresh tokens started by one Google login) ends after `SESSION_MAX_DAYS` (90, new setting) whatever the activity, and the person signs in with Google again. It bounds how long a stolen session can live and re-checks the Google account periodically.
 - Logout revokes the refresh token and clears the cookies.
 
 ### Tokens in HttpOnly cookies
 
-Both tokens travel in cookies with `HttpOnly` (unreadable from JavaScript, so an injected script cannot steal them), `Secure` (HTTPS only, except in development), `SameSite=Lax`, and a narrow path for the refresh cookie (`/api/auth`). The frontend is served from the same site as the API (`/api` behind the same reverse proxy, and the Angular development proxy locally), so cookies work without CORS.
+| Cookie | Name (staging, production) | Path | SameSite | Max age |
+| --- | --- | --- | --- | --- |
+| Access token | `__Host-sportlab_access` | `/` | `Strict` | `ACCESS_TOKEN_MINUTES` |
+| Refresh token | `__Secure-sportlab_refresh` | `/api/auth` | `Strict` | `REFRESH_TOKEN_DAYS` |
+| Login state (`state`, `nonce`, PKCE verifier, signed) | `__Host-sportlab_oauth` | `/` | `Lax` | 10 minutes |
 
-CSRF: `SameSite=Lax` blocks cross-site `POST`/`PUT`/`PATCH`/`DELETE` with cookies; in addition, state-changing requests must carry a custom header (`X-Requested-With`), which a cross-site form cannot set. `GET` requests never change state.
+- All cookies are `HttpOnly` (unreadable from JavaScript, so an injected script cannot steal them) and `Secure` (HTTPS only).
+- The `__Host-` and `__Secure-` name prefixes make the browser enforce those rules: a `__Host-` cookie is accepted only over HTTPS, without a `Domain` attribute and for path `/`. Cookies are host-only, so staging and production sessions never mix even though both are under `lacrete.casa`.
+- `Strict` for the session cookies: never sent from another site. The frontend is served from the same site as the API (`/api` behind the same reverse proxy, and the Angular development proxy locally), so this costs nothing and cookies work without CORS.
+- `Lax` only for the login state cookie: the return from Google is a navigation from `accounts.google.com`, another site, and a `Strict` cookie would not be sent with it.
+- In development (`ENVIRONMENT=development`, plain `http://localhost`): the same names without prefixes and without `Secure`, since there is no HTTPS.
+
+CSRF: `SameSite=Strict` already keeps the session cookies off cross-site requests; as a second barrier, state-changing requests (`POST`/`PUT`/`PATCH`/`DELETE`) must carry a custom header (`X-Requested-With`), which a cross-site form cannot set. `GET` requests never change state.
 
 ### Account status and roles
 
@@ -101,8 +113,17 @@ The `users` table is read by the authentication layer and by administrators, so 
 - No email, name or token in the logs.
 - `ruff check`, `ruff format --check` and `pytest` pass locally and in CI; the Bruno collection covers the new endpoints.
 
+## Environments and redirect URIs
+
+| Environment | Site | Google redirect URI |
+| --- | --- | --- |
+| Development | `http://localhost:8000` (backend; later the Angular proxy) | `http://localhost:8000/api/auth/google/callback` |
+| Staging | `https://sportlab-staging.lacrete.casa` | `https://sportlab-staging.lacrete.casa/api/auth/google/callback` |
+| Production | `https://sportlab.lacrete.casa` | `https://sportlab.lacrete.casa/api/auth/google/callback` |
+
+Cookies are host-only (no `Domain` attribute), so a staging session is never sent to production or the other way round, even though both are under `lacrete.casa`.
+
 ## Open points
 
-- **Google Cloud project**: an OAuth client ("Web application") must be created by Paolo in Google Cloud Console before PR 3 can be tried in a browser; PR 3 and its tests do not need it. Redirect URIs: `http://localhost:8000/api/auth/google/callback` for development, and the staging and production URLs once their domains are fixed.
-- **Staging domain**: production is `sportlab.lacrete.casa`; the staging address is needed for its redirect URI and cookie settings.
-- **Requirements document**: the project document maintained outside the repository may already specify session lifetimes or flows; any difference with this plan should be settled before PR 2.
+- **Google Cloud project**: the OAuth client ("Web application") is created by Paolo following `docs/google-oauth.md`, written in PR 6. Until then the login is covered only by the automated tests with the fake Google; trying it in a browser waits for PR 6.
+- **Requirements document**: the project document maintained outside the repository may specify session lifetimes, flows or account states differently from this plan; Paolo will clarify it in detail. Meanwhile the session decisions above (15 minutes, 30 days sliding, 90 days absolute, cookie settings) are the working proposal for PR 2 and later, and they are confirmed or adjusted before PR 2 starts. PR 1 (users table) depends only on the account states.

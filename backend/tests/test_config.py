@@ -1,6 +1,6 @@
 import pytest
 
-from app.core.config import SettingsError, load_settings
+from app.core.config import MigrationSettings, SettingsError, load_settings
 
 REQUIRED = {
     "DATABASE_URL": "postgresql+psycopg://app:app-password@localhost:5432/sportlab_test",
@@ -92,3 +92,21 @@ def test_secrets_are_hidden_in_repr(env: pytest.MonkeyPatch) -> None:
     assert "test-secret-key" not in text
     assert "app-password" not in text
     assert "mig-password" not in text
+
+
+def test_migration_settings_need_only_the_migration_url(env: pytest.MonkeyPatch) -> None:
+    """Alembic runs without the application's secrets (least privilege)."""
+    for name in ("DATABASE_URL", "SECRET_KEY", "ENCRYPTION_KEY"):
+        env.delenv(name)
+
+    settings = load_settings(env_file=None, settings_class=MigrationSettings)
+
+    assert settings.database_migration_url.unicode_string() == REQUIRED["DATABASE_MIGRATION_URL"]
+    assert not hasattr(settings, "secret_key")
+
+
+def test_migration_settings_require_the_migration_url(env: pytest.MonkeyPatch) -> None:
+    env.delenv("DATABASE_MIGRATION_URL")
+
+    with pytest.raises(SettingsError, match="DATABASE_MIGRATION_URL: Field required"):
+        load_settings(env_file=None, settings_class=MigrationSettings)
