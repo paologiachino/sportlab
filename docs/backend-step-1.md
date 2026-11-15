@@ -16,7 +16,7 @@ Authentication, users, Garmin sync, PostGIS tables, the frontend and the MCP ser
 
 Each item is one pull request towards `staging`, with its own tests and a short explanation of the non-obvious choices.
 
-1. **Project skeleton.** `backend/pyproject.toml` (dependencies, Ruff and pytest settings), `app/main.py` with a FastAPI application, `GET /api/health` returning `{"status": "ok"}`, and a first test using FastAPI's test client. The CI backend job starts running here because `pyproject.toml` now exists.
+1. **Project skeleton.** `backend/pyproject.toml` (dependencies, Ruff and pytest settings) and the `uv.lock` lock file, `app/main.py` with a FastAPI application, `GET /api/health` returning `{"status": "ok"}`, and a first test using FastAPI's test client. The CI backend job starts running here because `pyproject.toml` now exists, so this pull request also switches it from `pip install` to `uv` (`astral-sh/setup-uv`, `uv sync`, `uv run`), and adds the `uv` ecosystem to `.github/dependabot.yml`.
 2. **Configuration.** `app/core/config.py` reading the variables of `.env.example` with `pydantic-settings`. Missing required values fail at startup with a clear message. Test: defaults, a required variable missing, an override.
 3. **Database connection.** `app/db/` with the SQLAlchemy engine and session, using `DATABASE_URL`. `GET /api/health/db` runs `SELECT 1`. Test against a throwaway PostgreSQL (see below).
 4. **Alembic.** Alembic set up with `DATABASE_MIGRATION_URL`, an empty first revision, and a test that `upgrade head` and `downgrade base` both work on an empty database.
@@ -42,7 +42,11 @@ Each item is one pull request towards `staging`, with its own tests and a short 
 - `alembic upgrade head` works on an empty database.
 - `backend/README.md` and `CLAUDE.md` list the real commands.
 
-## Open points to confirm before starting
+## Decisions
 
-- Python version (CI uses 3.12) and dependency management: plain `pyproject.toml` with `pip`, or a tool such as `uv`.
-- PostGIS availability on the homelab (see `postgis.md`); step 1 does not need it, the development Compose uses the `postgis/postgis` image already.
+- **Python 3.12.** It is the version CI already uses, so development and checks run on the same one. The backend image will be `python:3.12-slim`. A move to a newer version is a separate, later step.
+- **`uv` for dependencies.** It creates the virtual environment, installs and locks versions in `uv.lock` (commands: `uv sync`, `uv add`, `uv run pytest`). A lock file makes installs repeatable, which plain `pip` does not give. Dependabot supports it.
+
+## Open points
+
+- PostGIS availability is settled: the dedicated container is running on the homelab (see `postgis.md`). Step 1 itself does not need it; the development Compose uses the `postgis/postgis` image.
