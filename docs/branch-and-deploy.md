@@ -5,7 +5,7 @@
 | Environment | Branch | Where it runs | Database | Data |
 | --- | --- | --- | --- | --- |
 | Development | `feature/...` | Docker Compose on the PC | `sportlab_dev` | synthetic |
-| Staging | `staging` | homelab | `sportlab_staging` | synthetic |
+| Staging | `staging` | homelab, `sportlab-staging.lacrete.casa` | `sportlab_staging` | synthetic |
 | Production | `main` | homelab, `sportlab.lacrete.casa` | `sportlab_prod` | real |
 
 Automated tests use a throwaway database created on every run.

@@ -101,8 +101,17 @@ The `users` table is read by the authentication layer and by administrators, so 
 - No email, name or token in the logs.
 - `ruff check`, `ruff format --check` and `pytest` pass locally and in CI; the Bruno collection covers the new endpoints.
 
+## Environments and redirect URIs
+
+| Environment | Site | Google redirect URI |
+| --- | --- | --- |
+| Development | `http://localhost:8000` (backend; later the Angular proxy) | `http://localhost:8000/api/auth/google/callback` |
+| Staging | `https://sportlab-staging.lacrete.casa` | `https://sportlab-staging.lacrete.casa/api/auth/google/callback` |
+| Production | `https://sportlab.lacrete.casa` | `https://sportlab.lacrete.casa/api/auth/google/callback` |
+
+Cookies are host-only (no `Domain` attribute), so a staging session is never sent to production or the other way round, even though both are under `lacrete.casa`.
+
 ## Open points
 
-- **Google Cloud project**: an OAuth client ("Web application") must be created by Paolo in Google Cloud Console before PR 3 can be tried in a browser; PR 3 and its tests do not need it. Redirect URIs: `http://localhost:8000/api/auth/google/callback` for development, and the staging and production URLs once their domains are fixed.
-- **Staging domain**: production is `sportlab.lacrete.casa`; the staging address is needed for its redirect URI and cookie settings.
-- **Requirements document**: the project document maintained outside the repository may already specify session lifetimes or flows; any difference with this plan should be settled before PR 2.
+- **Google Cloud project**: the OAuth client ("Web application") is created by Paolo following `docs/google-oauth.md`, written in PR 6. Until then the login is covered only by the automated tests with the fake Google; trying it in a browser waits for PR 6.
+- **Requirements document**: the project document maintained outside the repository may specify session lifetimes, flows or account states differently from this plan. To be clarified in detail by Paolo; the session decisions (PR 2 and later) are confirmed or adjusted before PR 2 starts. PR 1 (users table) does not depend on them beyond the account states.
