@@ -1,0 +1,25 @@
+info:
+  name: Health database
+  type: http
+  seq: 2
+
+http:
+  method: GET
+  url: "{{baseUrl}}/api/health/db"
+  auth: none
+
+runtime:
+  assertions:
+    - expression: res.status
+      operator: eq
+      value: "200"
+
+settings:
+  encodeUrl: true
+
+docs: |-
+  Readiness check: the database answers `SELECT 1`.
+
+  - `200 {"status": "ok"}`: the database is reachable.
+  - `503 {"detail": "database unavailable"}`: the database is down or unreachable.
+    Connection details are never returned; the backend log shows only the error type.
