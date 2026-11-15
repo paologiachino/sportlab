@@ -45,6 +45,13 @@ La configurazione degli ambienti e dei deploy sta nel repository [sportlab-infra
 
 Dettagli in [docs/branch-e-deploy.md](docs/branch-e-deploy.md).
 
+## Accesso e amministratore
+
+- Il login è solo con Google. Chi si registra resta "in attesa" finché un amministratore non lo approva.
+- L'amministratore non è un utente predefinito: il ruolo `admin` si assegna al primo accesso con l'email indicata in `ADMIN_EMAIL` (variabile d'ambiente, vedi `.env.example`). Si consiglia un indirizzo Google dedicato, separato dal proprio account personale.
+- Nessun nome o indirizzo reale compare nel codice o nel seeding. Il primo utente che si registra **non** diventa admin.
+- Un admin può promuovere o declassare altri utenti; l'ultimo admin non si può rimuovere.
+
 ## Sviluppo
 
 Editor consigliato: VS Code con le estensioni elencate in `.vscode/extensions.json`, e Claude Code dal terminale integrato. Le regole di lavoro del progetto sono in [CLAUDE.md](CLAUDE.md).

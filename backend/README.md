@@ -25,4 +25,5 @@ tests/        test automatici
 - Row-Level Security nel database come seconda barriera, con test che verificano che un utente non veda i dati di un altro.
 - Due ruoli di database per ambiente: applicazione (solo dati) e migrazioni (struttura).
 - Le migrazioni si rivedono a mano dopo la generazione automatica.
-- Seeding ripetibile: dati di riferimento e utente amministratore da `ADMIN_EMAIL`; nessuna password.
+- Seeding ripetibile: solo dati di riferimento; nessuna password e nessun utente scritto nel codice.
+- Amministratore: non è un utente del seeding. Il ruolo `admin` viene assegnato al primo accesso Google con l'indirizzo in `ADMIN_EMAIL` (variabile d'ambiente, mai nel repository). Un admin può promuovere o declassare altri utenti dal pannello; non si può rimuovere l'ultimo admin.
