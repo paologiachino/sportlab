@@ -1,6 +1,6 @@
-# Documentazione
+# Documentation
 
-- [Branch, ambienti e deploy](branch-e-deploy.md)
-- [PostGIS: verifica e installazione](postgis.md)
+- [Branches, environments and deploy](branch-and-deploy.md)
+- [PostGIS: check and installation](postgis.md)
 
-Il documento di progetto completo (requisiti, architettura, modello dati, seeding, mappe, traguardi e obiettivi) è mantenuto da Paolo fuori dal repository. Le decisioni che incidono sul codice vanno riportate qui, in file brevi.
+The complete project document (requirements, architecture, data model, seeding, maps, achievements and goals) is maintained by Paolo outside the repository. Decisions that affect the code should be recorded here, in short files.

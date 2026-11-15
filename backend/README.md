@@ -1,29 +1,29 @@
 # Backend
 
-API REST, modelli del database, sincronizzazione Garmin e migrazioni. Python con FastAPI, SQLAlchemy e Alembic.
+REST API, database models, Garmin sync and migrations. Python with FastAPI, SQLAlchemy and Alembic.
 
-Stato: solo struttura; il codice arriva nelle prossime fasi.
+Status: structure only; the code arrives in later phases.
 
-## Struttura prevista
+## Planned structure
 
 ```
 app/
-  api/        endpoint REST (sessioni, utenti, attività, metriche, obiettivi, amministrazione)
-  core/       configurazione, sicurezza, cifratura delle chiavi, log
-  db/         connessione, sessione, impostazione dell'utente per Row-Level Security
-  models/     modelli SQLAlchemy (utente, attività, tracce, metriche, segmenti, obiettivi, traguardi)
-  schemas/    schemi di ingresso e uscita delle API
-  services/   logica applicativa, con filtro obbligatorio per utente
-  sync/       worker di sincronizzazione con la Garmin Personal API
-migrations/   migrazioni Alembic
-tests/        test automatici
+  api/        REST endpoints (sessions, users, activities, metrics, goals, administration)
+  core/       configuration, security, key encryption, logging
+  db/         connection, session, per-user setting for Row-Level Security
+  models/     SQLAlchemy models (user, activity, tracks, metrics, segments, goals, achievements)
+  schemas/    API input and output schemas
+  services/   application logic, with mandatory per-user filtering
+  sync/       sync worker for the Garmin Personal API
+migrations/   Alembic migrations
+tests/        automated tests
 ```
 
-## Regole
+## Rules
 
-- Ogni dato personale ha `user_id`; le query passano solo da `services/` con l'utente autenticato.
-- Row-Level Security nel database come seconda barriera, con test che verificano che un utente non veda i dati di un altro.
-- Due ruoli di database per ambiente: applicazione (solo dati) e migrazioni (struttura).
-- Le migrazioni si rivedono a mano dopo la generazione automatica.
-- Seeding ripetibile: solo dati di riferimento; nessuna password e nessun utente scritto nel codice.
-- Amministratore: non è un utente del seeding. Il ruolo `admin` viene assegnato al primo accesso Google con l'indirizzo in `ADMIN_EMAIL` (variabile d'ambiente, mai nel repository). Un admin può promuovere o declassare altri utenti dal pannello; non si può rimuovere l'ultimo admin.
+- Every piece of personal data has a `user_id`; queries only go through `services/` with the authenticated user.
+- Row-Level Security in the database as a second barrier, with tests that check one user cannot see another user's data.
+- Two database roles per environment: application (data only) and migrations (schema).
+- Migrations are reviewed by hand after automatic generation.
+- Repeatable seeding: reference data only; no password and no user written in the code.
+- Administrator: not a seeded user. The `admin` role is assigned at the first Google login with the address in `ADMIN_EMAIL` (environment variable, never in the repository). An admin can promote or demote other users from the panel; the last admin cannot be removed.

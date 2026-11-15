@@ -1,19 +1,19 @@
-# Server MCP
+# MCP server
 
-Server MCP che espone i dati di Sportlab a Claude e ad altri agenti, sopra le stesse API del backend.
+MCP server that exposes Sportlab data to Claude and other agents, on top of the same backend APIs.
 
-Stato: solo struttura; previsto nelle fasi 1–2.
+Status: structure only; planned for phases 1–2.
 
-## Principi
+## Principles
 
-- Sola lettura all'inizio.
-- Un token personale per utente, con scadenza e revoca; nel database si salva solo l'hash.
-- Ogni richiesta vede solo i dati dell'utente a cui appartiene il token.
-- Un utente in attesa di approvazione non può usarlo.
+- Read-only at first.
+- One personal token per user, with expiry and revocation; only the hash is stored in the database.
+- Every request sees only the data of the user the token belongs to.
+- A user pending approval cannot use it.
 
-## Strumenti previsti
+## Planned tools
 
-- Elenco attività per periodo e sport e dettaglio di una attività.
-- Metriche giornaliere (HRV, sonno, battito, readiness).
-- Andamento del carico di allenamento.
-- Traguardi, record personali e obiettivi con avanzamento.
+- Activity list by period and sport, and the detail of one activity.
+- Daily metrics (HRV, sleep, heart rate, readiness).
+- Training load trend.
+- Achievements, personal records and goals with progress.
