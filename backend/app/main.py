@@ -2,6 +2,7 @@
 
 from fastapi import FastAPI
 
+from app.api import health
 from app.core.config import get_settings
 
 # Validated at import, so the server refuses to start with a broken environment
@@ -10,8 +11,4 @@ settings = get_settings()
 
 app = FastAPI(title="sportlab")
 
-
-@app.get("/api/health")
-def health() -> dict[str, str]:
-    """Liveness check: the process is up and answering requests."""
-    return {"status": "ok"}
+app.include_router(health.router, prefix="/api")
