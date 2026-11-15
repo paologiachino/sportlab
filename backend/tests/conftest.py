@@ -26,7 +26,7 @@ SYNTHETIC_ENV = {
     "ENVIRONMENT": "development",
     "DATABASE_URL": "postgresql+psycopg://test_app:test@localhost:5432/sportlab_test",
     "DATABASE_MIGRATION_URL": "postgresql+psycopg://test_migrator:test@localhost:5432/sportlab_test",
-    "SECRET_KEY": "test-secret-key",
+    "SECRET_KEY": "test-" + "x" * 32,  # obviously fake, long enough for the check
     "ENCRYPTION_KEY": "test-encryption-key",
 }
 
@@ -82,10 +82,14 @@ def empty_database() -> Iterator[Engine]:
     try:
         yield engine
     finally:
-        engine.dispose()
-        with admin.connect() as connection:
-            connection.execute(text(f'DROP DATABASE IF EXISTS "{name}" WITH (FORCE)'))
-        admin.dispose()
+        # Nested so the DROP runs even if closing the test's connections fails;
+        # any error is still reported, but no database is left behind
+        try:
+            engine.dispose()
+        finally:
+            with admin.connect() as connection:
+                connection.execute(text(f'DROP DATABASE IF EXISTS "{name}" WITH (FORCE)'))
+            admin.dispose()
 
 
 @pytest.fixture

@@ -4,7 +4,14 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Literal
 
-from pydantic import Field, PostgresDsn, SecretStr, ValidationError
+from pydantic import (
+    Field,
+    PostgresDsn,
+    SecretStr,
+    ValidationError,
+    field_validator,
+    model_validator,
+)
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 # backend/app/core/config.py -> repository root, where .env.example lives
@@ -52,6 +59,23 @@ class Settings(MigrationSettings):
 
     access_token_minutes: int = Field(default=15, gt=0)
     refresh_token_days: int = Field(default=30, gt=0)
+    # After this a session ends whatever the activity: sign in with Google again
+    session_max_days: int = Field(default=90, gt=0)
+
+    @field_validator("secret_key")
+    @classmethod
+    def secret_key_is_long_enough(cls, value: SecretStr) -> SecretStr:
+        # It signs the access tokens: a short key can be brute-forced, and this
+        # also refuses the CHANGE_ME placeholder of .env.example
+        if len(value.get_secret_value()) < 32:
+            raise ValueError("must be at least 32 characters")
+        return value
+
+    @model_validator(mode="after")
+    def refresh_fits_in_session(self) -> "Settings":
+        if self.refresh_token_days > self.session_max_days:
+            raise ValueError("REFRESH_TOKEN_DAYS cannot be longer than SESSION_MAX_DAYS")
+        return self
 
 
 class SettingsError(RuntimeError):

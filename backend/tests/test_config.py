@@ -5,7 +5,7 @@ from app.core.config import MigrationSettings, SettingsError, load_settings
 REQUIRED = {
     "DATABASE_URL": "postgresql+psycopg://app:app-password@localhost:5432/sportlab_test",
     "DATABASE_MIGRATION_URL": "postgresql+psycopg://migrator:mig-password@localhost:5432/sportlab_test",
-    "SECRET_KEY": "test-secret-key",
+    "SECRET_KEY": "test-" + "x" * 32,  # obviously fake, long enough for the check
     "ENCRYPTION_KEY": "test-encryption-key",
 }
 
@@ -16,6 +16,7 @@ OPTIONAL = [
     "ADMIN_EMAIL",
     "ACCESS_TOKEN_MINUTES",
     "REFRESH_TOKEN_DAYS",
+    "SESSION_MAX_DAYS",
 ]
 
 
@@ -35,6 +36,7 @@ def test_defaults(env: pytest.MonkeyPatch) -> None:
     assert settings.environment == "development"
     assert settings.access_token_minutes == 15
     assert settings.refresh_token_days == 30
+    assert settings.session_max_days == 90
     assert settings.google_client_id is None
     assert settings.admin_email is None
 
@@ -89,7 +91,7 @@ def test_error_message_does_not_leak_values(env: pytest.MonkeyPatch) -> None:
 def test_secrets_are_hidden_in_repr(env: pytest.MonkeyPatch) -> None:
     text = repr(load_settings(env_file=None))
 
-    assert "test-secret-key" not in text
+    assert REQUIRED["SECRET_KEY"] not in text
     assert "app-password" not in text
     assert "mig-password" not in text
 
@@ -110,3 +112,18 @@ def test_migration_settings_require_the_migration_url(env: pytest.MonkeyPatch) -
 
     with pytest.raises(SettingsError, match="DATABASE_MIGRATION_URL: Field required"):
         load_settings(env_file=None, settings_class=MigrationSettings)
+
+
+@pytest.mark.parametrize("value", ["CHANGE_ME", "x" * 31])
+def test_short_secret_key_is_refused(env: pytest.MonkeyPatch, value: str) -> None:
+    env.setenv("SECRET_KEY", value)
+
+    with pytest.raises(SettingsError, match="SECRET_KEY: Value error, must be at least 32"):
+        load_settings(env_file=None)
+
+
+def test_refresh_cannot_outlive_the_session(env: pytest.MonkeyPatch) -> None:
+    env.setenv("REFRESH_TOKEN_DAYS", "100")
+
+    with pytest.raises(SettingsError, match="cannot be longer than SESSION_MAX_DAYS"):
+        load_settings(env_file=None)
