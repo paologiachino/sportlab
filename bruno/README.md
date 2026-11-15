@@ -32,6 +32,17 @@ bruno/
 3. Select the **Local** environment (top right) if it is not already selected.
 4. Open a request and send it. The status assertion shows in the **Tests** tab of the response.
 
+To run the whole collection from the terminal with the Bruno CLI (`npm install -g @usebruno/cli`):
+
+```sh
+cd bruno
+bru run --env Local
+```
+
+## Request format
+
+Requests are `.yml` files with `info`, `http`, `runtime.assertions`, `settings` and `docs`. A request without authentication has no `auth` field at all: in this format `auth` is either `inherit` or an object such as `{ type: bearer, ... }`, and `auth: none` is rejected.
+
 ## Secrets
 
 Never write a token, password or key into these files. When authentication arrives, tokens go into environment variables marked as **secret** in Bruno: the file keeps only the variable name, and the value stays in Bruno's local encrypted store on your machine.
