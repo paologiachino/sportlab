@@ -12,6 +12,7 @@ the first source that has it wins:
 import os
 import uuid
 from collections.abc import Iterator
+from pathlib import Path
 
 import pytest
 from dotenv import dotenv_values
@@ -85,3 +86,20 @@ def empty_database() -> Iterator[Engine]:
         with admin.connect() as connection:
             connection.execute(text(f'DROP DATABASE IF EXISTS "{name}" WITH (FORCE)'))
         admin.dispose()
+
+
+@pytest.fixture
+def migrated_database(empty_database: Engine) -> Engine:
+    """A brand new database with every migration applied (`alembic upgrade head`).
+
+    The schema comes from the migrations, as in production, not from
+    `Base.metadata.create_all()`.
+    """
+    from alembic import command
+    from alembic.config import Config
+
+    config = Config(Path(__file__).resolve().parents[1] / "alembic.ini")
+    with empty_database.begin() as connection:
+        config.attributes["connection"] = connection
+        command.upgrade(config, "head")
+    return empty_database

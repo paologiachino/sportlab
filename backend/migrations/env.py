@@ -11,7 +11,8 @@ from alembic import context
 from sqlalchemy import Connection, create_engine, pool
 
 from app.core.config import get_settings
-from app.db.base import Base
+from app.db.base import include_object
+from app.models import Base
 
 config = context.config
 
@@ -33,6 +34,7 @@ def run_migrations_offline() -> None:
     context.configure(
         url=migration_url(),
         target_metadata=target_metadata,
+        include_object=include_object,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
     )
@@ -41,7 +43,9 @@ def run_migrations_offline() -> None:
 
 
 def run_migrations_on(connection: Connection) -> None:
-    context.configure(connection=connection, target_metadata=target_metadata)
+    context.configure(
+        connection=connection, target_metadata=target_metadata, include_object=include_object
+    )
     with context.begin_transaction():
         context.run_migrations()
 

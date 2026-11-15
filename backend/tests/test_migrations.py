@@ -10,7 +10,8 @@ from alembic.runtime.migration import MigrationContext
 from alembic.script import ScriptDirectory
 from sqlalchemy import Engine, inspect
 
-from app.db.base import Base
+from app.db.base import include_object
+from app.models import Base
 
 ALEMBIC_INI = Path(__file__).resolve().parents[1] / "alembic.ini"
 
@@ -76,6 +77,7 @@ def test_models_match_migrations(alembic_config: Config, empty_database: Engine)
     run(alembic_config, empty_database, "upgrade", "head")
 
     with empty_database.connect() as connection:
-        differences = compare_metadata(MigrationContext.configure(connection), Base.metadata)
+        context = MigrationContext.configure(connection, opts={"include_object": include_object})
+        differences = compare_metadata(context, Base.metadata)
 
     assert not differences, f"Models and migrations differ, add a revision: {differences}"
