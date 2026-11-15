@@ -9,7 +9,7 @@ Multi-user site for sports activities and health data downloaded from Garmin (Pe
 ## Stack (confirmed)
 
 - Backend: Python, FastAPI, SQLAlchemy, Alembic.
-- Database: PostgreSQL with PostGIS (to be verified on the homelab, see `docs/postgis.md`).
+- Database: PostgreSQL with PostGIS, in a dedicated container on the homelab (see `docs/postgis.md`).
 - Frontend: Angular, TypeScript, Tailwind CSS.
 - Maps: MapLibre GL, contour lines from a DEM.
 - MCP: read-only server at first, on top of the same backend APIs.
