@@ -35,19 +35,25 @@ jobs:
         id: has
         run: |
           if [ -f backend/pyproject.toml ]; then echo "present=true" >> "$GITHUB_OUTPUT"; else echo "present=false" >> "$GITHUB_OUTPUT"; fi
-      - uses: actions/setup-python@v7
+      # uv reads the Python version from backend/.python-version
+      - uses: astral-sh/setup-uv@v10
         if: steps.has.outputs.present == 'true'
         with:
-          python-version: "3.12"
+          enable-cache: true
+          cache-dependency-glob: backend/uv.lock
       - name: Install
         if: steps.has.outputs.present == 'true'
-        run: pip install -e "backend[dev]"
+        # --locked fails if uv.lock is out of date with pyproject.toml
+        run: uv sync --locked
+        working-directory: backend
       - name: Style check (Ruff)
         if: steps.has.outputs.present == 'true'
-        run: ruff check backend && ruff format --check backend
+        run: uv run ruff check && uv run ruff format --check
+        working-directory: backend
       - name: Test
         if: steps.has.outputs.present == 'true'
-        run: pytest backend/tests
+        run: uv run pytest
+        working-directory: backend
 
   frontend:
     name: Frontend
