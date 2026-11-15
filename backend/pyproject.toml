@@ -3,7 +3,7 @@ name = "sportlab-backend"
 version = "0.1.0"
 description = "sportlab REST API: activities and health data from Garmin"
 readme = "README.md"
-license = "AGPL-3.0-only"
+license = "AGPL-3.0-or-later"
 requires-python = ">=3.12"
 dependencies = [
     "fastapi>=0.163.0",
