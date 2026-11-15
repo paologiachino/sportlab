@@ -1,4 +1,10 @@
-"""Google sign-in: GET /api/auth/google/login, then Google calls /api/auth/google/callback."""
+"""Sign-in and session endpoints.
+
+- GET /api/auth/google/login, then Google calls /api/auth/google/callback
+- GET /api/auth/me: who is signed in (any status, so a pending user sees it)
+- POST /api/auth/refresh: new access and refresh cookies from the refresh cookie
+- POST /api/auth/logout: ends the session and clears the cookies
+"""
 
 import logging
 from datetime import timedelta
@@ -10,15 +16,25 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 from joserfc.errors import JoseError
 from sqlalchemy.orm import Session
 from starlette.concurrency import run_in_threadpool
-from starlette.responses import RedirectResponse, Response
+from starlette.responses import JSONResponse, RedirectResponse, Response
 
+from app.api.deps import CurrentUser
 from app.core.config import Settings, get_settings
-from app.core.cookies import set_session_cookies
+from app.core.cookies import clear_session_cookies, cookie_names, set_session_cookies
 from app.core.google import get_google_client
 from app.core.security import create_access_token
 from app.db.session import get_db
 from app.models import User
-from app.services.sessions import IssuedToken, SessionLifetimes, start_session
+from app.schemas.user import UserOut
+from app.services.sessions import (
+    InvalidRefreshTokenError,
+    IssuedToken,
+    RefreshTokenReuseError,
+    SessionLifetimes,
+    end_session,
+    rotate,
+    start_session,
+)
 from app.services.users import GoogleIdentity, sign_in
 
 logger = logging.getLogger(__name__)
@@ -87,11 +103,62 @@ async def google_callback(
     # Synchronous database work, off the event loop
     user, issued = await run_in_threadpool(_open_session, db, identity, settings)
 
-    access_token = create_access_token(
-        user.id,
+    response = RedirectResponse(AFTER_LOGIN_PATH, status_code=status.HTTP_303_SEE_OTHER)
+    set_session_cookies(response, settings, _access_token(issued, settings), issued.token)
+    return response
+
+
+def _access_token(issued: IssuedToken, settings: Settings) -> str:
+    return create_access_token(
+        issued.user_id,
         settings.secret_key.get_secret_value(),
         timedelta(minutes=settings.access_token_minutes),
     )
-    response = RedirectResponse(AFTER_LOGIN_PATH, status_code=status.HTTP_303_SEE_OTHER)
-    set_session_cookies(response, settings, access_token, issued.token)
+
+
+@router.get("/me")
+def me(user: CurrentUser) -> UserOut:
+    """The signed-in user. 401 when not signed in or the access token expired."""
+    return UserOut.model_validate(user)
+
+
+def _signed_out(settings: Settings, detail: str) -> Response:
+    """401 that also clears the cookies, so the browser stops sending dead tokens."""
+    response = JSONResponse({"detail": detail}, status_code=status.HTTP_401_UNAUTHORIZED)
+    clear_session_cookies(response, settings)
+    return response
+
+
+@router.post("/refresh", status_code=status.HTTP_204_NO_CONTENT)
+def refresh(request: Request, settings: SettingsDep, db: DbDep) -> Response:
+    """Exchange the refresh cookie for new access and refresh cookies.
+
+    The refresh token is rotated: the old one stops working. Presenting it again
+    revokes the whole session (someone copied it). The frontend must refresh
+    once at a time, shared by every tab.
+    """
+    token = request.cookies.get(cookie_names(settings).refresh)
+    if not token:
+        return _signed_out(settings, "Not signed in")
+    try:
+        issued = rotate(db, token, SessionLifetimes.from_settings(settings))
+    except RefreshTokenReuseError:
+        logger.warning("Refresh token reused: session revoked")
+        return _signed_out(settings, "Session ended")
+    except InvalidRefreshTokenError:
+        return _signed_out(settings, "Session ended")
+
+    response = Response(status_code=status.HTTP_204_NO_CONTENT)
+    set_session_cookies(response, settings, _access_token(issued, settings), issued.token)
+    return response
+
+
+@router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
+def logout(request: Request, settings: SettingsDep, db: DbDep) -> Response:
+    """End the session and clear the cookies. Safe to call when already signed out."""
+    token = request.cookies.get(cookie_names(settings).refresh)
+    if token:
+        end_session(db, token)
+    response = Response(status_code=status.HTTP_204_NO_CONTENT)
+    clear_session_cookies(response, settings)
     return response

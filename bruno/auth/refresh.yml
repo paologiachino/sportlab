@@ -1,0 +1,30 @@
+info:
+  name: Refresh
+  type: http
+  seq: 3
+
+http:
+  method: POST
+  url: "{{baseUrl}}/api/auth/refresh"
+  headers:
+    - name: X-Requested-With
+      value: XMLHttpRequest
+
+runtime:
+  assertions:
+    - expression: res.status
+      operator: neq
+      value: "500"
+
+settings:
+  encodeUrl: true
+
+docs: |-
+  Exchanges the refresh cookie for new access and refresh cookies.
+
+  - `204`: new cookies set; the old refresh token no longer works.
+  - `401`: no refresh cookie, or the session ended (expired, logged out, or an
+    old refresh token was reused, which revokes the whole session).
+
+  State-changing requests need the `X-Requested-With` header (CSRF barrier),
+  otherwise `403`.
