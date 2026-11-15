@@ -1,60 +1,67 @@
 # Sportlab
 
-Sito web multiutente per raccogliere e analizzare le attività sportive di una persona. I dati vengono scaricati da Garmin Connect (Personal API), salvati in un database PostgreSQL locale e mostrati in un'interfaccia web con dashboard, mappe e obiettivi. I dati sono accessibili anche a Claude (tramite un server MCP) per suggerimenti e pianificazione degli allenamenti.
+Multi-user web site that collects and analyses a person's sports activities. Data is downloaded from Garmin Connect (Personal API), stored in a local PostgreSQL database and shown in a web interface with dashboards, maps and goals. The data is also available to Claude (through an MCP server) for suggestions and training planning.
 
-Uso previsto: personale e familiare, su homelab, all'indirizzo `sportlab.lacrete.casa`. Il progetto è pensato per poter diventare pubblico in futuro.
+Intended use: personal and family, on a homelab, at `sportlab.lacrete.casa`. The project is designed so that it can become public in the future.
 
-> Stato: fase 0, solo struttura del progetto. Il codice dell'applicazione non c'è ancora.
+> Status: phase 0, project structure only. There is no application code yet.
 
 ## Stack
 
-| Livello | Tecnologia |
+| Layer | Technology |
 | --- | --- |
-| Backend e API | Python, FastAPI |
-| ORM e migrazioni | SQLAlchemy, Alembic |
-| Database | PostgreSQL con PostGIS |
+| Backend and API | Python, FastAPI |
+| ORM and migrations | SQLAlchemy, Alembic |
+| Database | PostgreSQL with PostGIS |
 | Frontend | Angular, TypeScript, Tailwind CSS |
-| Mappe | MapLibre GL, con curve di livello da dati di elevazione |
-| Accesso per Claude | server MCP (in sola lettura all'inizio) |
-| Contenitori e deploy | Docker, GitHub Actions, GHCR |
+| Maps | MapLibre GL, with contour lines from elevation data |
+| Access for Claude | MCP server (read-only at first) |
+| Containers and deploy | Docker, GitHub Actions, GHCR |
 
-## Struttura
+## Structure
 
 ```
-backend/    API, modelli, sincronizzazione Garmin, migrazioni
-frontend/   applicazione Angular
-mcp/        server MCP per Claude e altri agenti
-docs/       documentazione tecnica e decisioni
-.github/    controlli automatici, Dependabot, modelli per le richieste di revisione
-.vscode/    estensioni e impostazioni consigliate
+backend/    API, models, Garmin sync, migrations
+frontend/   Angular application
+mcp/        MCP server for Claude and other agents
+docs/       technical documentation and decisions
+.github/    automated checks, Dependabot, pull request template
+.vscode/    recommended extensions and settings
 ```
 
-La configurazione degli ambienti e dei deploy sta nel repository [sportlab-infra](https://github.com/paologiachino/sportlab-infra).
+Environment configuration and deploys live in the [sportlab-infra](https://github.com/paologiachino/sportlab-infra) repository.
 
-## Branch e ambienti
+## Branches and environments
 
-| Ambiente | Branch | Note |
+| Environment | Branch | Notes |
 | --- | --- | --- |
-| Sviluppo | `feature/...`, `fix/...`, `chore/...` | in locale con Docker Compose |
-| Pre-produzione | `staging` | dati sintetici |
-| Produzione | `main` | dati reali |
+| Development | `feature/...`, `fix/...`, `chore/...` | local, with Docker Compose |
+| Staging | `staging` | synthetic data |
+| Production | `main` | real data |
 
-1. `main` e `staging` sono protetti: nessuna scrittura diretta, solo richieste di revisione approvate.
-2. Ogni modifica nasce in un branch e arriva su `staging` con una richiesta di revisione.
-3. Dopo la prova in pre-produzione, `staging` entra in `main`.
+1. `main` and `staging` are protected: no direct pushes, only pull requests with passing checks.
+2. Every change starts in a branch and reaches `staging` through a pull request.
+3. After testing in staging, `staging` is merged into `main`.
 
-Dettagli in [docs/branch-e-deploy.md](docs/branch-e-deploy.md).
+Details in [docs/branch-and-deploy.md](docs/branch-and-deploy.md).
 
-## Sviluppo
+## Access and administrator
 
-Editor consigliato: VS Code con le estensioni elencate in `.vscode/extensions.json`, e Claude Code dal terminale integrato. Le regole di lavoro del progetto sono in [CLAUDE.md](CLAUDE.md).
+- Login is with Google only. People who register stay "pending" until an administrator approves them.
+- The administrator is not a default user: the `admin` role is assigned at the first login with the email set in `ADMIN_EMAIL` (environment variable, see `.env.example`). A dedicated Google address, separate from your personal account, is recommended.
+- No real name or address appears in the code or in the seeding. The first user to register does **not** become admin.
+- An admin can promote or demote other users; the last admin cannot be removed.
 
-Le istruzioni per avviare backend e frontend verranno aggiunte con il primo codice.
+## Development
 
-## Sicurezza
+Recommended editor: VS Code with the extensions listed in `.vscode/extensions.json`, and Claude Code in the integrated terminal. The project's working rules are in [CLAUDE.md](CLAUDE.md).
 
-Non inserire mai password, chiavi o token nel repository. Il file `.env.example` elenca le variabili necessarie; i valori reali restano fuori dal repository.
+Instructions to start the backend and frontend will be added with the first code.
 
-## Licenza
+## Security
 
-GNU Affero General Public License v3.0. Vedi [LICENSE](LICENSE).
+Never put passwords, keys or tokens in the repository. The `.env.example` file lists the required variables; the real values stay outside the repository.
+
+## Licence
+
+GNU Affero General Public License v3.0. See [LICENSE](LICENSE).

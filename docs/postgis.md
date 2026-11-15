@@ -1,32 +1,32 @@
-# PostGIS: verifica e installazione
+# PostGIS: check and installation
 
-PostGIS serve per tracce GPS e segmenti (mappe e segmenti, fase 3). L'immagine ufficiale di PostgreSQL non lo include.
+PostGIS is needed for GPS tracks and segments (maps and segments, phase 3). The official PostgreSQL image does not include it.
 
-Decisione: si usa il container PostgreSQL esistente sull'homelab, che è vuoto. Si sostituisce l'immagine con `postgis/postgis` (verificare i tag disponibili su Docker Hub).
+Decision: use the existing PostgreSQL container on the homelab, which is empty. Replace the image with `postgis/postgis` (check the available tags on Docker Hub).
 
-## Verifica
+## Check
 
-I nomi tra parentesi angolari vanno sostituiti.
+Names in angle brackets must be replaced.
 
 ```bash
-# container e immagine
+# container and image
 docker ps --format "table {{.Names}}\t{{.Image}}"
 
-# versione di PostgreSQL
-docker exec -it <container> psql -U <utente> -d postgres -c "SHOW server_version;"
+# PostgreSQL version
+docker exec -it <container> psql -U <user> -d postgres -c "SHOW server_version;"
 
-# estensione disponibile?
-docker exec -it <container> psql -U <utente> -d postgres -c "SELECT name, default_version, installed_version FROM pg_available_extensions WHERE name LIKE 'postgis%';"
+# is the extension available?
+docker exec -it <container> psql -U <user> -d postgres -c "SELECT name, default_version, installed_version FROM pg_available_extensions WHERE name LIKE 'postgis%';"
 ```
 
-Nessuna riga: PostGIS non è installato. Con righe: si abilita in ogni database con `CREATE EXTENSION postgis;` e si controlla con `SELECT postgis_full_version();`.
+No rows: PostGIS is not installed. With rows: enable it in each database with `CREATE EXTENSION postgis;` and check with `SELECT postgis_full_version();`.
 
-## Procedura
+## Procedure
 
-1. Controllare con `\l` (in `psql`) che il PostgreSQL sia davvero vuoto e annotare la versione maggiore.
-2. Backup per prudenza: `docker exec <container> pg_dumpall -U <utente> > backup.sql`, da conservare fuori dal container.
-3. Cambiare l'immagine nel file Docker Compose dell'homelab con `postgis/postgis` della versione desiderata. Se la versione maggiore cambia, ricreare il volume dati (nessun dato da conservare).
-4. Aggiornare e riavviare: `docker compose pull` e `docker compose up -d`.
-5. Creare i database `sportlab_staging` e `sportlab_prod` con i ruoli applicazione e migrazioni, abilitare PostGIS in ciascuno e verificarlo.
+1. Check with `\l` (in `psql`) that PostgreSQL really is empty, and note the major version.
+2. Back up as a precaution: `docker exec <container> pg_dumpall -U <user> > backup.sql`, and keep it outside the container.
+3. Change the image in the homelab's Docker Compose file to `postgis/postgis` of the desired version. If the major version changes, recreate the data volume (there is no data to keep).
+4. Update and restart: `docker compose pull` and `docker compose up -d`.
+5. Create the `sportlab_staging` and `sportlab_prod` databases with the application and migration roles, enable PostGIS in each one and verify it.
 
-L'installazione dei pacchetti con `apt` dentro il container non è consigliata: si perde alla prima ricreazione.
+Installing packages with `apt` inside the container is not recommended: it is lost the first time the container is recreated.

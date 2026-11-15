@@ -1,20 +1,20 @@
-## Cosa cambia
+## What changes
 
-<!-- Descrizione breve, in italiano. -->
+<!-- Short description, in English. -->
 
-## Perché
+## Why
 
-<!-- Requisito o decisione a cui si riferisce (es. RF-06). -->
+<!-- Requirement or decision it relates to (e.g. RF-06). -->
 
-## Come provarlo
+## How to test
 
-<!-- Passi per verificare la modifica in locale o in pre-produzione. -->
+<!-- Steps to verify the change locally or in staging. -->
 
-## Controlli
+## Checks
 
-- [ ] Test automatici eseguiti e superati
-- [ ] Controlli di stile superati
-- [ ] Nessun segreto o dato reale nel codice
-- [ ] Ogni nuovo dato personale ha `user_id` e un test di isolamento tra utenti
-- [ ] Migrazione rivista a mano e compatibile con la versione precedente (se presente)
-- [ ] Documentazione aggiornata (se serve)
+- [ ] Automated tests run and pass
+- [ ] Style checks pass
+- [ ] No secrets or real data in the code
+- [ ] Every new personal data field has `user_id` and a user-isolation test
+- [ ] Migration reviewed by hand and compatible with the previous version (if any)
+- [ ] Documentation updated (if needed)
