@@ -1,48 +1,47 @@
 # CLAUDE.md — sportlab
 
-Regole di lavoro per Claude Code in questo repository. Il proprietario è Paolo, che valida ogni modifica e usa il progetto anche per imparare: spiega le scelte non ovvie e procedi a piccoli passi.
+Working rules for Claude Code in this repository. The owner is Paolo, who validates every change and also uses the project to learn: explain non-obvious choices and proceed in small steps.
 
-## Progetto
+## Project
 
-Sito multiutente per attività sportive e dati di salute scaricati da Garmin (Personal API), con backend, frontend, server MCP e database PostgreSQL. Fase attuale: fase 0 (struttura). Descrizione completa in `README.md` e in `docs/`.
+Multi-user site for sports activities and health data downloaded from Garmin (Personal API), with a backend, frontend, MCP server and PostgreSQL database. Current phase: phase 0 (structure). Full description in `README.md` and in `docs/`.
 
-## Stack (confermato)
+## Stack (confirmed)
 
 - Backend: Python, FastAPI, SQLAlchemy, Alembic.
-- Database: PostgreSQL con PostGIS (da verificare sull'homelab, vedi `docs/postgis.md`).
+- Database: PostgreSQL with PostGIS (to be verified on the homelab, see `docs/postgis.md`).
 - Frontend: Angular, TypeScript, Tailwind CSS.
-- Mappe: MapLibre GL, curve di livello da DEM.
-- MCP: server in sola lettura all'inizio, sopra le stesse API del backend.
+- Maps: MapLibre GL, contour lines from a DEM.
+- MCP: read-only server at first, on top of the same backend APIs.
 
-## Modalità di lavoro
+## Working method
 
-1. Lavora sempre su un branch (`feature/...`, `fix/...`, `chore/...`), mai direttamente su `main` o `staging`.
-2. Passi piccoli: una funzione o un modulo alla volta, con test, poi una richiesta di revisione.
-3. Spiega in breve ogni scelta non ovvia (struttura Angular, uso di SQLAlchemy, logica di sincronizzazione), così Paolo può validarla e imparare.
-4. Non dichiarare un lavoro finito senza aver eseguito test e controlli di stile. Se non puoi eseguirli, dillo.
-5. Una richiesta di revisione per volta, descritta in italiano, con cosa cambia e come provarla.
+1. Always work on a branch (`feature/...`, `fix/...`, `chore/...`), never directly on `main` or `staging`.
+2. Small steps: one function or module at a time, with tests, then a pull request.
+3. Briefly explain every non-obvious choice (Angular structure, use of SQLAlchemy, sync logic) so Paolo can validate it and learn.
+4. Do not call a piece of work finished without running tests and style checks. If you cannot run them, say so.
+5. One pull request at a time, described in English, with what changes and how to test it.
 
-## Convenzioni (proposta, da confermare)
+## Conventions
 
-- Chat con Paolo in italiano. Codice, identificatori, workflow, commenti, messaggi di commit e descrizioni delle richieste di revisione in inglese.
-- Messaggi di commit in inglese con prefisso: `feat:`, `fix:`, `chore:`, `docs:`, `test:`.
-- La documentazione esistente (`README.md`, `docs/`) è ancora in italiano; la traduzione è da decidere.
-- Python: formattazione e controllo con Ruff, tipi dove utile. TypeScript: ESLint e Prettier.
+- Chat with Paolo is in Italian. Code, identifiers, workflows, comments, documentation, commit messages and pull request descriptions are in English.
+- Commit messages in English with a prefix: `feat:`, `fix:`, `chore:`, `docs:`, `test:`.
+- Python: formatting and linting with Ruff, types where useful. TypeScript: ESLint and Prettier.
 
-## Regole di sicurezza e dati
+## Security and data rules
 
-- Nessun segreto nel codice o nei repository: tutto da variabili d'ambiente (vedi `.env.example`).
-- Ogni dato personale ha `user_id`; ogni query passa dallo strato che filtra per l'utente autenticato. Il database aggiunge Row-Level Security come seconda barriera.
-- Gli utenti si registrano con Google e restano "in attesa" finché l'amministratore non li approva.
-- L'amministratore è impersonale: nessun nome o email nel codice né nel seeding. Il ruolo `admin` va all'email in `ADMIN_EMAIL` al primo accesso; la registrazione libera non assegna mai ruoli.
-- Le chiavi Garmin degli utenti si salvano cifrate; non si scrivono mai nei log.
-- Le migrazioni si fanno con Alembic, scritte in modo compatibile con la versione precedente del codice.
-- Dati di prova solo sintetici; mai dati reali di salute in sviluppo o pre-produzione.
+- No secrets in the code or in the repositories: everything comes from environment variables (see `.env.example`).
+- Every piece of personal data has a `user_id`; every query goes through the layer that filters by the authenticated user. The database adds Row-Level Security as a second barrier.
+- Users register with Google and stay "pending" until the administrator approves them.
+- The administrator is impersonal: no name or email in the code or in the seeding. The `admin` role goes to the email in `ADMIN_EMAIL` at first login; open registration never assigns roles.
+- Users' Garmin keys are stored encrypted; they are never written to logs.
+- Migrations use Alembic and are written to be compatible with the previous version of the code.
+- Test data is synthetic only; never real health data in development or staging.
 
-## Comandi
+## Commands
 
-Da completare quando esiste il codice (avvio, test, migrazioni, controlli di stile).
+To be completed once the code exists (start, test, migrations, style checks).
 
-## Licenza
+## Licence
 
-AGPL-3.0. Nuove dipendenze devono avere licenze compatibili.
+AGPL-3.0. New dependencies must have compatible licences.

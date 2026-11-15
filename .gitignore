@@ -1,4 +1,4 @@
-# Segreti e configurazione locale
+# Secrets and local configuration
 .env
 .env.*
 !.env.example
@@ -23,7 +23,7 @@ frontend/dist/
 frontend/.angular/
 npm-debug.log*
 
-# Dati locali e file scaricati
+# Local data and downloaded files
 *.fit
 *.gpx
 /data/
@@ -34,7 +34,7 @@ npm-debug.log*
 # Docker
 docker-compose.override.yml
 
-# Editor e sistema
+# Editor and system
 .DS_Store
 .idea/
 .vscode/*
