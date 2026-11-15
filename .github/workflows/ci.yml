@@ -35,8 +35,9 @@ jobs:
         id: has
         run: |
           if [ -f backend/pyproject.toml ]; then echo "present=true" >> "$GITHUB_OUTPUT"; else echo "present=false" >> "$GITHUB_OUTPUT"; fi
-      # uv reads the Python version from backend/.python-version
-      - uses: astral-sh/setup-uv@v10
+      # uv reads the Python version from backend/.python-version.
+      # Pinned to a commit: setup-uv publishes no floating major tag (no "v10").
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
         if: steps.has.outputs.present == 'true'
         with:
           enable-cache: true
