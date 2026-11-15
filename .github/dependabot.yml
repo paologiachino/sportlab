@@ -1,0 +1,10 @@
+# Per ora solo le GitHub Actions: pip, npm e docker si aggiungono
+# quando esistono backend/pyproject.toml, frontend/package.json e i Dockerfile
+# (Dependabot segnala errore se non trova i file da controllare).
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: monthly
+    target-branch: staging
