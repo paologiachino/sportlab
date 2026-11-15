@@ -6,6 +6,7 @@ wherever the full set of tables matters (migrations, their tests).
 """
 
 from app.db.base import Base
+from app.models.refresh_token import RefreshToken
 from app.models.user import User, UserRole, UserStatus
 
-__all__ = ["Base", "User", "UserRole", "UserStatus"]
+__all__ = ["Base", "RefreshToken", "User", "UserRole", "UserStatus"]
