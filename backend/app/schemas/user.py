@@ -1,6 +1,7 @@
 """What the API returns about a user."""
 
 import uuid
+from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict
 
@@ -20,4 +21,19 @@ class UserOut(BaseModel):
     email: str
     display_name: str | None
     status: UserStatus
+    role: UserRole
+
+
+class UserAdminOut(UserOut):
+    """A user as administrators see it in the user list."""
+
+    created_at: datetime
+    last_login_at: datetime | None
+    approved_at: datetime | None
+    approved_by: uuid.UUID | None
+
+
+class RoleChange(BaseModel):
+    """Body of POST /api/admin/users/{user_id}/role."""
+
     role: UserRole

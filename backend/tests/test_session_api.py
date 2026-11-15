@@ -1,6 +1,5 @@
 """Session endpoints (/me, /refresh, /logout), access levels and the CSRF header."""
 
-import uuid
 from collections.abc import Iterator
 from datetime import UTC, datetime, timedelta
 
@@ -12,13 +11,12 @@ from sqlalchemy.orm import Session
 
 from app.api.deps import ActiveUser, AdminUser
 from app.core.config import Settings, get_settings
-from app.core.cookies import REFRESH_COOKIE_PATH
 from app.core.csrf import RequireCSRFHeader
 from app.core.security import create_access_token, decode_access_token, hash_refresh_token
 from app.db.session import get_db
 from app.main import app
-from app.models import RefreshToken, User, UserRole, UserStatus
-from app.services.sessions import SessionLifetimes, start_session
+from app.models import RefreshToken, UserRole, UserStatus
+from tests.support import make_user, set_cookie, sign_in
 
 CSRF = {"X-Requested-With": "XMLHttpRequest"}
 
@@ -49,36 +47,6 @@ def client(migrated_database: Engine) -> Iterator[TestClient]:
         yield TestClient(app)
     finally:
         app.dependency_overrides.clear()
-
-
-def make_user(db: Session, status: str = UserStatus.ACTIVE, role: str = UserRole.USER) -> User:
-    sub = uuid.uuid4().hex
-    user = User(google_sub=sub, email=f"user-{sub[:8]}@example.com", status=status, role=role)
-    db.add(user)
-    db.commit()
-    return user
-
-
-def sign_in(client: TestClient, db: Session, user: User, settings: Settings) -> str:
-    """Put the cookies the Google callback would set; returns the refresh token."""
-    issued = start_session(db, user.id, SessionLifetimes.from_settings(settings))
-    access = create_access_token(
-        user.id, settings.secret_key.get_secret_value(), timedelta(minutes=15)
-    )
-    set_cookie(client, "sportlab_access", access)
-    set_cookie(client, "sportlab_refresh", issued.token)
-    return issued.token
-
-
-# The test client's host; httpx stores cookies of dotless hosts under ".local"
-COOKIE_DOMAIN = "testserver.local"
-COOKIE_PATHS = {"sportlab_access": "/", "sportlab_refresh": REFRESH_COOKIE_PATH}
-
-
-def set_cookie(client: TestClient, name: str, value: str) -> None:
-    """Set a cookie as the server does (same domain and path), so the server's own
-    Set-Cookie replaces it instead of creating a second cookie with the same name."""
-    client.cookies.set(name, value, domain=COOKIE_DOMAIN, path=COOKIE_PATHS[name])
 
 
 # --- GET /api/auth/me ---------------------------------------------------------

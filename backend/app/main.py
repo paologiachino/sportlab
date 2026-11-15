@@ -5,7 +5,7 @@ import logging
 from fastapi import FastAPI
 from starlette.middleware.sessions import SessionMiddleware
 
-from app.api import auth, health
+from app.api import admin, auth, health
 from app.core.config import get_settings
 from app.core.cookies import OAUTH_STATE_LIFETIME, cookie_names
 from app.core.csrf import RequireCSRFHeader
@@ -39,3 +39,4 @@ app.add_middleware(RequireCSRFHeader)
 
 app.include_router(health.router, prefix="/api")
 app.include_router(auth.router, prefix="/api")
+app.include_router(admin.router, prefix="/api")
