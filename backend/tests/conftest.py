@@ -1,8 +1,12 @@
 """Shared test setup.
 
-pytest loads this file before importing the test modules, so the synthetic
-environment below is in place when `app.main` validates the settings.
-Values already set (for example by CI) are kept.
+pytest loads this file before importing the test modules, so the environment
+below is in place when `app.main` validates the settings. For each variable,
+the first source that has it wins:
+
+1. the process environment (for example CI);
+2. the repository's .env (locally, with the development Compose database);
+3. the synthetic values below.
 """
 
 import os
@@ -10,6 +14,7 @@ import uuid
 from collections.abc import Iterator
 
 import pytest
+from dotenv import dotenv_values
 from sqlalchemy import Engine, create_engine, make_url, text
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
@@ -23,8 +28,20 @@ SYNTHETIC_ENV = {
     "ENCRYPTION_KEY": "test-encryption-key",
 }
 
-for name, value in SYNTHETIC_ENV.items():
-    os.environ.setdefault(name, value)
+
+def _prepare_environment() -> None:
+    # Imported here: importing app.core.config does not read any setting yet
+    from app.core.config import ENV_FILE
+
+    # Same ${...} expansion as the backend and Docker Compose
+    for name, value in dotenv_values(ENV_FILE).items():
+        if value:
+            os.environ.setdefault(name, value)
+    for name, value in SYNTHETIC_ENV.items():
+        os.environ.setdefault(name, value)
+
+
+_prepare_environment()
 
 
 def require_database(engine: Engine) -> None:

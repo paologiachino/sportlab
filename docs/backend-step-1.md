@@ -2,7 +2,7 @@
 
 Plan for the first piece of code. To be implemented on the Mac with VS Code and Claude Code, one small pull request at a time, so every piece can be reviewed and understood before the next one.
 
-Status: plan only. Nothing here has been run yet.
+Status: implemented. PR 1 to PR 4 are #15, #16, #17 and #19; PR 5 adds the development Compose. The Bruno collection (#18) was added along the way.
 
 ## Goal
 
