@@ -1,4 +1,4 @@
-# npm and docker are added once frontend/package.json and the Dockerfiles exist
+# docker is added once the Dockerfiles exist
 # (Dependabot reports an error when it cannot find the files to check).
 version: 2
 updates:
@@ -14,3 +14,20 @@ updates:
     schedule:
       interval: monthly
     target-branch: staging
+
+  # Frontend dependencies (frontend/package-lock.json). Angular packages move
+  # together, so they arrive in one pull request; majors go through ng update.
+  - package-ecosystem: npm
+    directory: "/frontend"
+    schedule:
+      interval: monthly
+    target-branch: staging
+    groups:
+      angular:
+        patterns:
+          - "@angular/*"
+          - "@angular-eslint/*"
+          - "angular-eslint"
+    ignore:
+      - dependency-name: "@angular/*"
+        update-types: ["version-update:semver-major"]
