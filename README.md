@@ -4,7 +4,7 @@ Multi-user web site that collects and analyses a person's sports activities. Dat
 
 Intended use: personal and family, on a homelab, at `sportlab.lacrete.casa`. The project is designed so that it can become public in the future.
 
-> Status: backend in progress. Google sign-in, sessions and user approval work (backend step 2); Garmin sync, frontend and MCP server are not started yet.
+> Status: Google sign-in, sessions and user approval work end to end, from the browser (backend step 2, frontend step 1). Next: the staging deploy, then the Garmin sync; the MCP server is not started yet.
 
 ## Stack
 
@@ -56,7 +56,7 @@ Details in [docs/branch-and-deploy.md](docs/branch-and-deploy.md).
 
 Recommended editor: VS Code with the extensions listed in `.vscode/extensions.json`, and Claude Code in the integrated terminal. The project's working rules are in [CLAUDE.md](CLAUDE.md).
 
-To start the backend and run its checks, see [backend/README.md](backend/README.md). Google sign-in needs an OAuth client: [docs/google-oauth.md](docs/google-oauth.md). The frontend instructions will come with its first code.
+To start the backend and run its checks, see [backend/README.md](backend/README.md); for the frontend, [frontend/README.md](frontend/README.md). Google sign-in needs an OAuth client: [docs/google-oauth.md](docs/google-oauth.md).
 
 ## Security
 

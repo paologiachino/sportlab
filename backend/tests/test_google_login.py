@@ -11,12 +11,12 @@ from sqlalchemy import Engine, func, select
 from sqlalchemy.orm import Session
 
 from app.core.config import Settings, get_settings
-from app.core.google import build_google_client, get_google_client
+from app.core.google import GOOGLE_METADATA_URL, build_google_client, get_google_client
 from app.core.security import decode_access_token, hash_refresh_token
 from app.db.session import get_db
 from app.main import app
 from app.models import RefreshToken, User, UserRole, UserStatus
-from tests.fake_google import Account, FakeGoogle, new_rsa_key
+from tests.fake_google import TOKEN_URL, Account, FakeGoogle, new_rsa_key
 
 CLIENT_ID = "fake-client-id.apps.googleusercontent.com"
 CLIENT_SECRET = "fake-client-secret"  # noqa: S105 (synthetic)
@@ -91,6 +91,12 @@ def sign_in(
 
 def count_users(db: Session) -> int:
     return db.scalar(select(func.count()).select_from(User)) or 0
+
+
+def assert_back_to_login(response: object, error: str) -> None:
+    """A failed sign-in sends the browser to the login page with an error code."""
+    assert response.status_code == 303  # type: ignore[attr-defined]
+    assert response.headers["location"] == f"/login?error={error}"  # type: ignore[attr-defined]
 
 
 def test_login_redirects_to_google_with_state_nonce_and_pkce(client: TestClient) -> None:
@@ -182,7 +188,7 @@ def test_sign_in_never_changes_status_or_role(
 def test_unverified_email_is_refused(client: TestClient, google: FakeGoogle, db: Session) -> None:
     response = sign_in(client, google, Account(email=ADMIN_EMAIL, email_verified=False))
 
-    assert response.status_code == 403
+    assert_back_to_login(response, "unverified_email")
     assert count_users(db) == 0
     assert "sportlab_access" not in client.cookies
 
@@ -198,7 +204,7 @@ def test_wrong_state_is_refused(client: TestClient, google: FakeGoogle, db: Sess
         follow_redirects=False,
     )
 
-    assert response.status_code == 400
+    assert_back_to_login(response, "failed")
     assert count_users(db) == 0
 
 
@@ -217,7 +223,7 @@ def test_invalid_id_token_is_refused(
 ) -> None:
     response = sign_in(client, google, Account(), **claims)
 
-    assert response.status_code == 400
+    assert_back_to_login(response, "failed")
     assert count_users(db) == 0
 
 
@@ -233,7 +239,7 @@ def test_id_token_signed_by_another_key_is_refused(
         follow_redirects=False,
     )
 
-    assert response.status_code == 400
+    assert_back_to_login(response, "failed")
     assert count_users(db) == 0
 
 
@@ -245,8 +251,8 @@ def test_callback_cannot_be_replayed(client: TestClient, google: FakeGoogle) -> 
     first = client.get("/api/auth/google/callback", params=params, follow_redirects=False)
     second = client.get("/api/auth/google/callback", params=params, follow_redirects=False)
 
-    assert first.status_code == 303
-    assert second.status_code == 400
+    assert first.headers["location"] == "/"
+    assert_back_to_login(second, "failed")
 
 
 def test_logs_carry_no_email_or_name(
@@ -262,11 +268,54 @@ def test_logs_carry_no_email_or_name(
     assert "Private Person" not in caplog.text
 
 
-def test_not_configured_answers_503() -> None:
+def test_cancelled_at_google_goes_back_to_login(
+    client: TestClient, google: FakeGoogle, db: Session
+) -> None:
+    """Pressing "Cancel" at Google: Google comes back with error=access_denied."""
+    query = start_login(client)
+
+    response = client.get(
+        "/api/auth/google/callback",
+        params={"error": "access_denied", "state": query["state"]},
+        follow_redirects=False,
+    )
+
+    assert_back_to_login(response, "cancelled")
+    assert count_users(db) == 0
+
+
+def test_not_configured_goes_back_to_login() -> None:
     app.dependency_overrides[get_google_client] = lambda: None
     try:
         client = TestClient(app)
-        assert client.get("/api/auth/google/login", follow_redirects=False).status_code == 503
-        assert client.get("/api/auth/google/callback").status_code == 503
+        for path in ("/api/auth/google/login", "/api/auth/google/callback"):
+            assert_back_to_login(client.get(path, follow_redirects=False), "unavailable")
     finally:
         app.dependency_overrides.clear()
+
+
+def test_google_unreachable_at_login_goes_back_to_login(
+    client: TestClient, google: FakeGoogle
+) -> None:
+    google.unreachable.add(GOOGLE_METADATA_URL)
+
+    response = client.get("/api/auth/google/login", follow_redirects=False)
+
+    assert_back_to_login(response, "unavailable")
+
+
+def test_google_unreachable_at_callback_goes_back_to_login(
+    client: TestClient, google: FakeGoogle, db: Session
+) -> None:
+    query = start_login(client)
+    code = google.issue_code(Account(), nonce=query["nonce"])
+    google.unreachable.add(TOKEN_URL)
+
+    response = client.get(
+        "/api/auth/google/callback",
+        params={"code": code, "state": query["state"]},
+        follow_redirects=False,
+    )
+
+    assert_back_to_login(response, "unavailable")
+    assert count_users(db) == 0
