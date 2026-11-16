@@ -87,7 +87,7 @@ Tests cover: one refresh for many concurrent 401s, retry after refresh, sign-out
 
 **Guards** are functions that run before a route opens and redirect elsewhere: signed out → `/login`, pending → `/pending`, disabled → `/disabled`, non-admin on `/admin` → `/`. They are a convenience for the interface only: the backend checks every request anyway (401/403), so a modified frontend gains nothing.
 
-The administration page shows the backend's answers as they are: the last-admin guard refuses with an error message, which is displayed, not hidden. Destructive actions (disable, demote) ask for confirmation.
+The administration page shows the backend's refusals, never hides them: the last-admin guard and the other `409`/`404`/`403` answers become a message in Italian (the backend's `detail` is English, for developers), with a generic message for anything unexpected. Destructive actions (disable, demote) ask for confirmation. When administrators change their own role or status, the session is reloaded and the guards decide where they can stay.
 
 ### Failed sign-in: a small backend change
 
