@@ -2,7 +2,7 @@
 
 REST API, database models, Garmin sync and migrations. Python with FastAPI, SQLAlchemy and Alembic.
 
-Status: step 2 done (Google sign-in, sessions, user approval and roles), on top of step 1 (health endpoints, settings, database session, Alembic). Plans: `docs/backend-step-1.md`, `docs/backend-step-2.md`.
+Status: step 2 done (Google sign-in, sessions, user approval and roles), on top of step 1 (health endpoints, settings, database session, Alembic). Plans: `docs/backend-step-1.md`, `docs/backend-step-2.md`. The frontend that uses it is in `frontend/` (`docs/frontend-step-1.md`).
 
 ## Development
 
@@ -29,7 +29,9 @@ Variables set in the shell take precedence over `.env`: after an `export DATABAS
 
 ### Google sign-in
 
-Without `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` the backend starts normally and `/api/auth/google/login` answers `503`; the tests never need them (they use a fake Google). To sign in for real, create the OAuth client following `docs/google-oauth.md`, fill in `.env` (with `ADMIN_EMAIL` for the first administrator), restart the backend and open http://localhost:8000/api/auth/google/login, using `localhost` rather than `127.0.0.1` so the browser keeps the login cookie.
+Without `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` the backend starts normally and `/api/auth/google/login` sends the browser back to `/login?error=unavailable`; the tests never need them (they use a fake Google). To sign in for real, create the OAuth client following `docs/google-oauth.md`, fill in `.env` (with `ADMIN_EMAIL` for the first administrator), restart the backend, start the frontend (`frontend/README.md`) and open http://localhost:4200, using `localhost` rather than `127.0.0.1` so the browser keeps the login cookie.
+
+The two Google endpoints are browser navigations: every failure redirects to `/login?error=<code>` (`cancelled`, `failed`, `unverified_email`, `unavailable`) instead of answering JSON. `PUBLIC_URL` is the address the browser uses (`http://localhost:4200` with the frontend, `http://localhost:8000` for the backend alone): see `docs/google-oauth.md`.
 
 | Endpoint | Who | What |
 | --- | --- | --- |
