@@ -48,6 +48,8 @@ class FakeGoogle:
         self.kid = "fake-key-1"
         self._codes: dict[str, dict[str, object]] = {}
         self.token_requests: list[dict[str, list[str]]] = []
+        # URLs (without query) that fail as if Google were unreachable
+        self.unreachable: set[str] = set()
 
     @property
     def transport(self) -> httpx2.MockTransport:
@@ -95,6 +97,8 @@ class FakeGoogle:
 
     def _handle(self, request: httpx2.Request) -> httpx2.Response:
         url = str(request.url).split("?")[0]
+        if url in self.unreachable:
+            raise httpx2.ConnectError("Google unreachable", request=request)
         if request.method == "GET" and url == GOOGLE_METADATA_URL:
             return httpx2.Response(
                 200,
