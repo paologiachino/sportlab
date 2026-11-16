@@ -2,7 +2,7 @@
 
 Plan for the first frontend code: the Angular project, the session handling on top of the step 2 backend, and the pages that make sign-in and user approval usable from a browser. Same method as the backend steps: one small pull request at a time towards `staging`, each with its tests and a short explanation of the non-obvious choices.
 
-Status: plan, to be reviewed. Nothing here has been implemented yet.
+Status: plan approved by Paolo. Nothing here has been implemented yet.
 
 ## Goal
 
@@ -95,7 +95,7 @@ Today a failed callback (refused by Google, unverified email, Google unreachable
 
 ### Interface language
 
-Paolo and family use Italian, while the project may become public. Proposal: Italian text in the templates for now, without a translation framework; when the site becomes public, Angular's built-in i18n (`$localize`) marks the texts and adds English. See "Open points".
+Decided: Italian text in the templates for now, without a translation framework, since Paolo and family use Italian. When the site becomes public, Angular's built-in i18n (`$localize`) marks the texts and adds English. Code, identifiers and comments stay in English as everywhere else.
 
 ## Pull requests
 
@@ -129,6 +129,6 @@ Paolo and family use Italian, while the project may become public. Proposal: Ita
 
 ## Open points
 
-- **Interface language**: Italian now and i18n later (proposed), or English from the start, or i18n from the start.
-- **Google client**: Paolo adds `http://localhost:4200/api/auth/google/callback` to the development OAuth client before PR 3 can be tried by hand.
 - **Angular and Node versions**: fixed when the project is created (PR 1), after checking the current releases and their support windows.
+
+Resolved: the interface is in Italian (see above); the development Google client already has the `http://localhost:4200/api/auth/google/callback` redirect URI.
