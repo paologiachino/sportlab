@@ -2,7 +2,7 @@
 
 Plan for the first frontend code: the Angular project, the session handling on top of the step 2 backend, and the pages that make sign-in and user approval usable from a browser. Same method as the backend steps: one small pull request at a time towards `staging`, each with its tests and a short explanation of the non-obvious choices.
 
-Status: plan approved by Paolo. Nothing here has been implemented yet.
+Status: done. Implemented in pull requests #35 (Angular project), #36 (session and silent refresh), #37 (sign-in pages and guards), #38 (user administration) and this documentation update.
 
 ## Goal
 

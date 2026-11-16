@@ -10,7 +10,7 @@ One Google Cloud project, **one OAuth client per environment**:
 
 | Client name | Environment | Authorized redirect URI |
 | --- | --- | --- |
-| `sportlab development` | Development | `http://localhost:8000/api/auth/google/callback` |
+| `sportlab development` | Development | `http://localhost:4200/api/auth/google/callback` (through the Angular server) and `http://localhost:8000/api/auth/google/callback` (backend alone) |
 | `sportlab staging` | Staging | `https://sportlab-staging.lacrete.casa/api/auth/google/callback` |
 | `sportlab production` | Production | `https://sportlab.lacrete.casa/api/auth/google/callback` |
 
@@ -18,7 +18,7 @@ Why separate clients:
 
 - The production secret never sits on a laptop: the development `.env` holds only the development secret.
 - A leaked secret is revoked for one environment without touching the others.
-- Each client accepts only its own redirect URI, so a code issued for development can never be sent to production, and the other way round.
+- Each client accepts only its own redirect URIs, so a code issued for development can never be sent to production, and the other way round.
 
 The backend builds the redirect URI from `PUBLIC_URL` + `/api/auth/google/callback`, not from the request, so the reverse proxy in front of staging and production does not change it. It must match the console **exactly**: scheme, host, port, path, no trailing slash.
 
@@ -59,7 +59,7 @@ The backend requests exactly these scopes (`GOOGLE_SCOPES` in `backend/app/core/
 1. **Application type**: **Web application**.
 2. **Name**: for example `sportlab development`.
 3. **Authorized JavaScript origins**: leave empty. The browser never talks to Google with the client ID; the whole exchange happens on the backend.
-4. **Authorized redirect URIs**: the single URI of that environment, from the table.
+4. **Authorized redirect URIs**: the URIs of that environment, from the table (two for development, one for staging and one for production).
 5. **Create**, then copy the **client ID** and the **client secret** immediately into your password manager. Newer versions of the console show the secret only once; if it is lost, add a new secret to the client and delete the old one.
 
 Changes to redirect URIs can take a few minutes to apply.
@@ -72,7 +72,7 @@ In `.env` at the repository root (never committed):
 
 ```sh
 ENVIRONMENT=development
-PUBLIC_URL=http://localhost:8000
+PUBLIC_URL=http://localhost:4200
 GOOGLE_CLIENT_ID=<client ID of "sportlab development">
 GOOGLE_CLIENT_SECRET=<its secret>
 ADMIN_EMAIL=<the Google address that becomes the first administrator>
@@ -80,19 +80,22 @@ ADMIN_EMAIL=<the Google address that becomes the first administrator>
 
 Restart `uvicorn`: settings are read once at startup.
 
+`PUBLIC_URL` is the address the browser uses. With the frontend it is the Angular development server, `http://localhost:4200`, which forwards `/api` to the backend; to try the backend alone, without the frontend, set `http://localhost:8000`. Both redirect URIs are registered on the development client, so switching needs only a backend restart.
+
 ### Staging and production
 
 The same variables, with that environment's client and `PUBLIC_URL` (`https://sportlab-staging.lacrete.casa` or `https://sportlab.lacrete.casa`), and `ENVIRONMENT=staging` or `production`. The values live in the environment configuration of the deploy ([sportlab-infra](https://github.com/paologiachino/sportlab-infra)), never in this repository. Outside development `PUBLIC_URL` must be `https`, and the backend logs a warning at startup when `ADMIN_EMAIL` is empty.
 
 ## 7. Try it in development
 
-1. Start the database and the backend (see `backend/README.md`).
-2. Open **http://localhost:8000/api/auth/google/login** in the browser. Use `localhost`, not `127.0.0.1`: the browser keeps cookies per host name, and the short-lived login cookie set on one name is not sent back when Google returns to the other, so the callback would fail with `400`.
-3. Choose the Google account and accept. Google sends the browser back to `/api/auth/google/callback`, which opens the session and redirects to `/`. There is no frontend yet, so `/` answers `{"detail":"Not Found"}`: that is expected.
-4. Open **http://localhost:8000/api/auth/me**. You should see your account:
-   - the `ADMIN_EMAIL` account, on its first sign-in: `"status": "active"`, `"role": "admin"`;
-   - any other account: `"status": "pending"`, `"role": "user"`, until an administrator approves it.
-5. To approve someone, sign in as the administrator and call `POST /api/admin/users/{id}/approve`, for example from Bruno (see `bruno/README.md` for using the browser session there).
+1. Start the database and the backend (see `backend/README.md`), then the frontend (`npm start` in `frontend/`, see `frontend/README.md`).
+2. Open **http://localhost:4200** and press **Accedi con Google**. Use `localhost`, not `127.0.0.1`: the browser keeps cookies per host name, and the short-lived login cookie set on one name is not sent back when Google returns to the other, so the sign-in would fail.
+3. Choose the Google account and accept. Google sends the browser back to `/api/auth/google/callback` (forwarded to the backend), which opens the session and redirects to `/`:
+   - the `ADMIN_EMAIL` account, on its first sign-in, is an active administrator: the home page, with **Utenti** in the header;
+   - any other account is pending until an administrator approves it: the "waiting for approval" page.
+4. To approve someone, sign in as the administrator, open **Utenti** and press **Approva**.
+
+Without the frontend (`PUBLIC_URL=http://localhost:8000`), open http://localhost:8000/api/auth/google/login instead; after the sign-in `/` answers `{"detail":"Not Found"}`, which is expected, and http://localhost:8000/api/auth/me shows the account. Bruno can then use the browser session (see `bruno/README.md`).
 
 `ADMIN_EMAIL` counts only when the account is **created**. If that address already signed in before `ADMIN_EMAIL` was set, it stays a pending user; in development the simplest fix is to start from an empty database (`docker compose down -v`, then the migrations again).
 
@@ -101,11 +104,12 @@ The same variables, with that environment's client and `PUBLIC_URL` (`https://sp
 | Symptom | Likely cause |
 | --- | --- |
 | Google shows `Error 400: redirect_uri_mismatch` | `PUBLIC_URL` + `/api/auth/google/callback` differs from the URI registered on the client: `http` vs `https`, `localhost` vs `127.0.0.1`, port, trailing slash, or the wrong client ID for this environment. |
-| `503` `Google login is not configured` | `GOOGLE_CLIENT_ID` or `GOOGLE_CLIENT_SECRET` is empty, or the backend was not restarted after editing `.env`. |
+| Back on the login page with "non è disponibile" (`/login?error=unavailable`) | `GOOGLE_CLIENT_ID` or `GOOGLE_CLIENT_SECRET` is empty, the backend was not restarted after editing `.env`, or the backend could not reach Google (network, DNS, proxy). The backend log says which. |
 | Google shows `access_denied` / "app is being tested" | The publishing status is **Testing** and the account is not in **Test users**. |
-| `400` `Google sign-in failed` at the callback | The login cookie was missing or expired (another host name, more than 10 minutes on Google's page, cookies blocked), the consent was refused, or the client secret is wrong. The backend log names the error type. |
-| `403` `Google email address not verified` | The Google account has no verified email; sign-in is refused because `ADMIN_EMAIL` could otherwise be claimed by anyone. |
-| `502` `Google is not reachable` | The backend could not reach Google (network, DNS, proxy). |
+| Back on the login page with "annullato" (`?error=cancelled`) | The person pressed **Cancel** on Google's consent screen. |
+| Back on the login page with "non riuscito" (`?error=failed`) | The login cookie was missing or expired (another host name, more than 10 minutes on Google's page, cookies blocked), or the client secret is wrong. The backend log names the error type. |
+| Back on the login page with "non è verificato" (`?error=unverified_email`) | The Google account has no verified email; sign-in is refused because `ADMIN_EMAIL` could otherwise be claimed by anyone. |
+| The page `http://localhost:4200/api/...` does not answer | The Angular server is running but the backend is not, on port 8000. |
 
 ## Rotating a client secret
 

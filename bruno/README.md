@@ -68,12 +68,12 @@ Never write a token, cookie, password or key into these files. A value Bruno mus
 
 Sign-in needs a browser (Google's pages), so Bruno borrows the session the browser opened. The session is two HttpOnly cookies, `sportlab_access` (15 minutes) and `sportlab_refresh` (path `/api/auth`).
 
-1. Configure Google sign-in (see `docs/google-oauth.md`) and sign in at http://localhost:8000/api/auth/google/login.
-2. In the browser's developer tools (**Application** or **Storage** → **Cookies** → `http://localhost:8000`) copy the value of `sportlab_access`.
+1. Configure Google sign-in (see `docs/google-oauth.md`) and sign in through the frontend at http://localhost:4200 (or at http://localhost:8000/api/auth/google/login with `PUBLIC_URL=http://localhost:8000`).
+2. In the browser's developer tools (**Application** or **Storage** → **Cookies** → the address you signed in on) copy the value of `sportlab_access`.
 3. In Bruno, open the **Cookies** manager and add `sportlab_access` with that value for the domain **`127.0.0.1`**, path `/`. The domain must match `baseUrl` in the Local environment, not the `localhost` used by the browser: cookies are kept per host name.
 4. Send `auth/Me`: `200` with your account. Admin requests also need the `X-Requested-With` header, already set on them.
 
-After 15 minutes the access cookie expires and requests answer `401`: sign in again in the browser and copy the new value (there is no frontend yet to renew it in the browser).
+After 15 minutes the access cookie expires and requests answer `401`: use the site in the browser for a moment (the frontend renews the session by itself) and copy the new value.
 
 To renew from Bruno with `auth/Refresh`, copy `sportlab_refresh` as well (domain `127.0.0.1`, path `/api/auth`), then **stop using that session in the browser**. Refresh tokens are single-use: when Bruno refreshes, the browser's copy becomes an old token, and presenting an old token is treated as theft and ends the session for both. Sign in again in the browser when you need it there.
 
