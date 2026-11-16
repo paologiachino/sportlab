@@ -70,8 +70,8 @@ The access token lives 15 minutes. When a request gets **401**, an interceptor c
 The difficulty: the refresh token is **rotated**, and presenting an old one is treated as theft (step 2). If two requests, or two tabs, refresh at the same moment, the second one presents a token the first already replaced, and the backend ends the session. So:
 
 - **Inside a tab**: concurrent 401s share one refresh in progress (the first starts it, the others wait for its result).
-- **Across tabs**: the refresh runs inside a **Web Lock** (`navigator.locks.request('sportlab-refresh', ...)`, a browser API that gives a named lock to one tab at a time). A tab that obtains the lock after another tab has just refreshed does not refresh again: the cookies are shared, so it first retries its request, and refreshes only if that still gets 401.
-- `/api/auth/refresh` and `/api/auth/me` themselves never trigger a refresh (no loops).
+- **Across tabs**: the refresh runs inside a **Web Lock** (`navigator.locks.request('sportlab-refresh', ...)`, a browser API that gives a named lock to one tab at a time). Each successful refresh writes its time in `localStorage`; a request that got 401 and then obtains the lock checks it first: if a refresh happened after the request was sent, in this tab or another one, the cookies (shared by every tab) are already new, and the request is only repeated. The same check also merges the concurrent 401s of one tab, so a single mechanism covers both cases.
+- `/api/auth/refresh`, `/api/auth/logout` and the Google redirects never trigger a refresh (no loops, nothing to keep). `/api/auth/me` does: after a pause longer than the access token's 15 minutes, its 401 only means that the access token expired, while the refresh token may still be valid.
 
 Tests cover: one refresh for many concurrent 401s, retry after refresh, sign-out after a failed refresh, no refresh for the auth endpoints. The cross-tab case is tested with a fake lock in unit tests, and by hand with two tabs.
 
