@@ -6,5 +6,6 @@
 - [Backend step 2: Google registration and approval](backend-step-2.md)
 - [Google sign-in: OAuth client setup](google-oauth.md)
 - [Frontend step 1: sign-in, approval and administration](frontend-step-1.md)
+- [Staging deploy: images, homelab and first release](staging-deploy.md)
 
 The complete project document (requirements, architecture, data model, seeding, maps, achievements and goals) is maintained by Paolo outside the repository. Decisions that affect the code should be recorded here, in short files.
