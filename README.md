@@ -4,6 +4,8 @@ Multi-user web site that collects and analyses a person's sports activities. Dat
 
 Intended use: personal and family, on a homelab, at `sportlab.lacrete.casa`. The project is designed so that it can become public in the future.
 
+> Migration: Sportlab is becoming **Zonedose**, with the backend on Orchard Core in the [zonedose](https://github.com/paologiachino/zonedose) repository. The frontend here already uses that backend; the FastAPI backend in `backend/` is paused.
+
 > Status: Google sign-in, sessions and user approval work end to end, from the browser (backend step 2, frontend step 1). Next: the staging deploy, then the Garmin sync; the MCP server is not started yet.
 
 ## Stack

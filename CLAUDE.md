@@ -6,6 +6,8 @@ Working rules for Claude Code in this repository. The owner is Paolo, who valida
 
 Multi-user site for sports activities and health data downloaded from Garmin (Personal API), with a backend, frontend, MCP server and PostgreSQL database. Current phase: backend step 2 (Google sign-in, sessions, user approval, see `docs/backend-step-2.md`) and frontend step 1 (Angular sign-in, waiting pages, user administration, see `docs/frontend-step-1.md`) done. Next, in this order: the staging deploy on the homelab, then the Garmin keys and sync (backend step 3). Full description in `README.md` and in `docs/`.
 
+**Migration to Zonedose (in progress):** the project is being renamed Zonedose and its backend moved to Orchard Core in the [zonedose](https://github.com/paologiachino/zonedose) repository (`docs/orchard-migration-plan.md` there). From phase 4 the Angular frontend here talks to that backend (`frontend/proxy.conf.json` points to `http://localhost:8080`); the FastAPI backend in `backend/` is paused and receives no new features.
+
 ## Stack (confirmed)
 
 - Backend: Python, FastAPI, SQLAlchemy, Alembic.
